@@ -1,6 +1,6 @@
 import pprint
 from binance.client import Client
-from constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY
+from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY
 
 
 TARGET_COIN_TICKER = 'BTC/USDT'

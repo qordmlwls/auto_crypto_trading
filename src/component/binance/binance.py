@@ -1,4 +1,20 @@
 import time
+import ccxt
+
+
+class Binance:
+    def __init__(self, api_key, api_secret):
+        self.api_key = api_key
+        self.api_secret = api_secret
+
+        self.binance = ccxt.binance({
+            'apiKey': self.api_key,
+            'secret': self.api_secret,
+            'enableRateLimit': True,
+            'options': {
+                'defaultType': 'future'
+            },
+        })  # binance 객체 생성
 
 
 def set_stop_loss_price(binance, ticker, stop_price, rest=True):
