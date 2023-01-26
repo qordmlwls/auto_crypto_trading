@@ -4,7 +4,7 @@ import json
 from typing import List, NoReturn
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.externals import joblib
+# from sklearn.externals import joblib
 
 # from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY
 # from src.component.binance.binance import Binance
@@ -63,12 +63,19 @@ def preprocess(data_list: List, output_dir: str) -> pd.DataFrame:
             price[f'ask_volume_{i}'] = asks[i][1]
         df_list.append(price)
     df = pd.concat(df_list)
-    scaler = MinMaxScaler()
-    scaler.fit(df)
-    scaled_df = pd.DataFrame(scaler.transform(df), columns=df.columns)
+    # target = df[['close']]
+    # scaler_x = MinMaxScaler()
+    # scaler_x.fit(df)
+    # scaled_df = pd.DataFrame(scaler_x.transform(df), columns=df.columns)
     
-    # save scaler
-    file_name = join(output_dir, 'scaler.pkl')
-    joblib.dump(scaler, file_name)
-    return scaled_df
+    # scaler_y = MinMaxScaler()
+    # scaler_y.fit(target)
+    # target_scaled = pd.DataFrame(scaler_y.transform(target), columns=target.columns)
+    
+    # # save scaler
+    # file_name_x = join(output_dir, 'scaler_x.pkl')
+    # file_name_y = join(output_dir, 'scaler_y.pkl')
+    # joblib.dump(scaler_x, file_name_x)
+    # joblib.dump(scaler_y, file_name_y)
+    return df
     
