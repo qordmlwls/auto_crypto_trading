@@ -10,11 +10,13 @@ from src.component.preprocess.preprocess import ORDER_BOOK_RANK_SIZE
 
 # 해당 모듈은 매 1분마다 실행되어야 한다.
 
+ROOT_DIR = os.environ.get('PYTHONPATH', os.getcwd())
 TARGET_COIN_TICKER = 'BTC/USDT'
 TARGET_COIN_SYMBOL = 'BTCUSDT'
-DATA_DIR = 'order_books'
+DATA_DIR = os.path.join(ROOT_DIR, 'order_books')
 TIME_WINDOW = 30
 BUKET_NAME = 'autocryptotrading'
+
 
 
 def main():
