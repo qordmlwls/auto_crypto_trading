@@ -1,3 +1,5 @@
 ccxt==1.55.1
 python-binance==1.0.12
 redis==3.0.1
+boto3==1.26.7
+sagemaker==2.116.0

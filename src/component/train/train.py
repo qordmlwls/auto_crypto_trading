@@ -32,65 +32,65 @@ class GrudModel(LightningModule):
         self.batch_size = args['batch_size']
         self.learning_rate = args['learning_rate']
         self.sequence_length = args['frame_size']
+        self.device = get_gpu_device()
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, batch_first=True)
+        self.layer_norm = nn.LayerNorm(self.hidden_size)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
+        self.criterion = nn.MSELoss()
 
     def forward(self, x):
         # input x: (batch, seq_len, input_size)
         h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
         out, _ = self.gru(x, h0)  # out: tensor of shape (batch_size, seq_length, hidden_size)
+        maximum = out.max()
+        if maximum == np.Inf or maximum == np.NINF:
+            raise ValueError('ValueError: inf or -inf')
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
+        out = F.relu(out)
+        out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        # x: (batch, seq_len, input_size)
+        # y: (batch, output_size(=frame_size))
+        x, y = batch['data'], batch['target']
         y_hat = self(x)
-        loss = F.mse_loss(y_hat, y)
-        self.log('train_loss', loss)
-        return loss
-
+        loss = self.criterion(y_hat, y)
+        # self.log('train_loss', loss)
+        return {'loss': loss}
+    
+    def training_epoch_end(self, outputs):
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        self.log('train_loss', avg_loss)
+    
     def validation_step(self, batch, batch_idx):
         # x: (batch, seq_len, input_size)
         # y: (batch, output_size(=frame_size))
         x, y = batch['data'], batch['target']
         y_hat = self(x)
-        loss = F.mse_loss(y_hat, y)
-        self.log('val_loss', loss)
-        return loss
-
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = F.mse_loss(y_hat, y)
-        self.log('test_loss', loss)
-        return loss
+        loss = self.criterion(y_hat, y)
+        # self.log('val_loss', loss)  
+        return {'val_loss': loss}
+    
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        self.log('val_loss', avg_loss)
+        return {'val_loss': avg_loss}
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, verbose=True)
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'monitor': 'val_loss'
+            }
+        }
 
-    # def train_dataloader(self):
-    #     return DataLoader(GrudDataset(train_x, train_y), batch_size=self.batch_size, shuffle=True)
-
-    # def val_dataloader(self):
-    #     return DataLoader(GrudDataset(val_x, val_y), batch_size=self.batch_size, shuffle=False)
-
-    # def test_dataloader(self):
-    #     return DataLoader(GrudDataset(test_x, test_y), batch_size=self.batch_size, shuffle=False)
-    
-
-# class GruDataset(Dataset):
-#     def __init__(self, x: DataFrame, y: DataFrame):
-#         self.x = x  
-#         self.y = y
-
-#     def __len__(self):
-#         return len(self.x)
-
-#     def __getitem__(self, idx):
-#         return self.x.lioc[idx]
 
 class GrudDataset(Dataset):
     def __init__(self, x: DataFrame, y: DataFrame):
@@ -115,7 +115,7 @@ class GruTrainer:
         self.val_dataloader = None
         self.device = get_gpu_device()
         
-    def _prepare_batch_wrapper(self, batch: Dict[str, DataFrame]):
+    def _prepare_batch_wrapper(self, batch: Dict[str, DataFrame]) -> Dict[str, torch.Tensor]:
         return prepare_batch(batch, self.args['frame_size'])
         
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
@@ -155,6 +155,7 @@ class GruTrainer:
         joblib.dump(scaler, os.path.join(self.args['save_dir'], 'scaler.pkl'))
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
+        
     def run(self, df: DataFrame) -> NoReturn:
         
         self._prepare_dataset(df)
@@ -168,7 +169,6 @@ class GruTrainer:
             verbose=True,
             monitor='val_loss',
             mode='min',
-            prefix=''
         )
         early_stop_callback = EarlyStopping(
             monitor='val_loss',
@@ -177,16 +177,44 @@ class GruTrainer:
             verbose=False,
             mode='min'
         )
-        trainer = Trainer(
-            gpus=1,
-            max_epochs=self.args['epochs'],
-            callbacks=[checkpoint_callback, early_stop_callback],
-            progress_bar_refresh_rate=20,
-            logger=pl.loggers.TensorBoardLogger(self.args['save_dir'])
-        )
-        trainer.fit(model, self.train_dataloader, self.val_dataloader)
-        trainer.test(model, self.val_dataloader)
-        trainer.save_checkpoint(os.path.join(self.args['save_dir'], 'grud.ckpt'))
+        if pl.__version__ == '1.7.6':
+            trainer = Trainer(
+                callbacks=[checkpoint_callback, early_stop_callback],
+                max_epochs=self.args['n_epochs'],
+                fast_dev_run=self.args['test_mode'],
+                num_sanity_val_steps=None if self.args['test_mode'] else 0,
+
+                # For gpu Setup
+                deterministic=True if self.device != torch.device('cpu') else False,
+                gpus=-1 if self.device != 'cpu' else None,
+                precision=16 if self.args['fp16'] else 32,
+                accelerator='cuda' if torch.cuda.is_available() else None,  # pytorch-lightning 1.7.6
+                strategy='dp' if torch.cuda.is_available() else None  # pytorch-lightning 1.7.6
+            )
+        elif pl.__version__ == '1.4.9':
+            trainer = Trainer(
+                callbacks=[checkpoint_callback, early_stop_callback],
+                max_epochs=self.args['n_epochs'],
+                fast_dev_run=self.args['test_mode'],
+                num_sanity_val_steps=None if self.args['test_mode'] else 0,
+
+                # For gpu Setup
+                deterministic=True if self.device != torch.device('cpu') else False,
+                gpus=-1 if self.device != 'cpu' else None,
+                precision=16 if self.args['fp16'] else 32,
+                accelerator='dp' if torch.cuda.is_available() else None  # pytorch-lightning 1.4.9
+            )
+        else:
+            raise Exception("pytorch lightning version should be 1.7.6 or 1.4.9")
+        # trainer = Trainer(
+        #     gpus=1,
+        #     max_epochs=self.args['epochs'],
+        #     callbacks=[checkpoint_callback, early_stop_callback],
+        #     progress_bar_refresh_rate=20,
+        #     logger=pl.loggers.TensorBoardLogger(self.args['save_dir'])
+        # )
+        trainer.fit(model=model, train_dataloaders=self.train_dataloader, val_dataloaders=self.val_dataloader)
+        # trainer.save_checkpoint(os.path.join(self.args['save_dir'], 'grud.ckpt'))
         print('Done training')
-        return model
+        
                                          
