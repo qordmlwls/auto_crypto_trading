@@ -62,7 +62,6 @@ def main():
         f'ask_volume_{i}': ask[1] for i, ask in enumerate(asks)
     })
     redis.set(f'data_{now}', json.dumps(data_redis))
-    print(redis.get(f'data_{now}'))
 
 
 if __name__ == '__main__':
