@@ -12,6 +12,7 @@ TARGET_COIN_SYMBOL = 'BTCUSDT'
 ROOT_DIR = os.environ.get('PYTHONPATH', '')
 DATA_DIR = os.path.join(ROOT_DIR, 'order_books')
 
+print(os.path.dirname(os.path.abspath(__file__)))
 # binance = ccxt.binance(config={
 #     'apikey': BINANCE_API_KEY,
 #     'secret': BINANCE_SECRET_KEY,
@@ -37,10 +38,10 @@ DATA_DIR = os.path.join(ROOT_DIR, 'order_books')
 # # pprint.pprint(order_book)
 # redis = Redis(host='localhost', port=6379, db=0)
 
-with open(os.path.join(DATA_DIR, 'data_202301231657.json'), 'r') as f:
-    order_book = json.load(f)
+# with open(os.path.join(DATA_DIR, 'data_202301231657.json'), 'r') as f:
+#     order_book = json.load(f)
     
-with open(os.path.join(DATA_DIR, 'data_202301232240.json'), 'r') as f:
-    order_book2 = json.load(f)
-top_5_bid = sorted(order_book['bids'], key=lambda x: x[0], reverse=True)[:5]
-print('end')
+# with open(os.path.join(DATA_DIR, 'data_202301232240.json'), 'r') as f:
+#     order_book2 = json.load(f)
+# top_5_bid = sorted(order_book['bids'], key=lambda x: x[0], reverse=True)[:5]
+# print('end')
