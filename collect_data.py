@@ -14,7 +14,7 @@ TARGET_COIN_TICKER = 'BTC/USDT'
 TARGET_COIN_SYMBOL = 'BTCUSDT'
 DATA_DIR = 'order_books'
 TIME_WINDOW = 30
-BUKET_NAME = 'data'
+BUKET_NAME = 'autocryptotrading'
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
     with open(os.path.join(DATA_DIR, f'data_{now}.json'), 'w') as f:
         json.dump(data, f)
 
-    s3.upload_file(os.path.join(DATA_DIR, f'data_{now}.json'), f'data_{now}.json')
+    s3.upload_file(os.path.join(DATA_DIR, f'data_{now}.json'), f'data/data_{now}.json')
 
     os.remove(os.path.join(DATA_DIR, f'data_{now}.json'))
 
