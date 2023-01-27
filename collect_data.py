@@ -39,8 +39,10 @@ def main():
 
     os.remove(os.path.join(DATA_DIR, f'data_{now}.json'))
 
-    if redis.size() > TIME_WINDOW:
-        redis.delete(redis.keys()[0])
+    if redis.size() >= TIME_WINDOW:
+        keys = list(redis.keys())
+        keys.sort()
+        redis.delete(keys[0])
 
     data_redis = {
         'open': ticker['open'],
