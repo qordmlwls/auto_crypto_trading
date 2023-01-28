@@ -5,7 +5,7 @@ import json
 from src.component.preprocess.preprocess import preprocess
 
 
-ROOT_DIR = os.environ.get('PYTHONPATH', '')
+ROOT_DIR = '/opt/ml/preprocessing'
 DATA_DIR = join(ROOT_DIR, 'data')
 OUTPUT_DIR = join(ROOT_DIR, 'output')
 
@@ -18,6 +18,7 @@ def main():
             with open(join(DATA_DIR, file), 'r') as f:
                 data = json.load(f)
             data_list.append(data)
+    data_list.sort(key=lambda x: x['ticker']['timestamp'])
     df = preprocess(data_list)
     df.to_csv(join(OUTPUT_DIR, 'preprocessed.csv'), index=False)
 
