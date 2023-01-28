@@ -2,7 +2,7 @@ import os
 import json
 from torch import Tensor
 from pandas import DataFrame
-from typing import NoReturn, Dict
+from typing import NoReturn, Dict, List
 
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.model_selection import train_test_split
@@ -16,6 +16,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import pytorch_lightning as pl
 import numpy as np
+import pandas as pd
 
 from src.module.utills.data import prepare_batch
 from src.module.utills.gpu import get_gpu_device
@@ -32,17 +33,19 @@ class GrudModel(LightningModule):
         self.batch_size = args['batch_size']
         self.learning_rate = args['learning_rate']
         self.sequence_length = args['frame_size']
-        self.device = get_gpu_device()
+        self.drop_out = args['drop_out']
 
-        self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, batch_first=True)
-        self.layer_norm = nn.LayerNorm(self.hidden_size)
+        self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
+                          dropout=self.drop_out ,batch_first=True)
+        self.layer_norm = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
         self.criterion = nn.MSELoss()
 
     def forward(self, x):
         # input x: (batch, seq_len, input_size)
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
-        out, _ = self.gru(x, h0)  # out: tensor of shape (batch_size, seq_length, hidden_size)
+        # h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
+        # out, _ = self.gru(x, h0)  # out: tensor of shape (batch_size, seq_length, hidden_size)
+        out, _ = self.gru(x.float())  # out: tensor of shape (batch_size, seq_length, hidden_size)
         maximum = out.max()
         if maximum == np.Inf or maximum == np.NINF:
             raise ValueError('ValueError: inf or -inf')
@@ -56,7 +59,7 @@ class GrudModel(LightningModule):
     def training_step(self, batch, batch_idx):
         # x: (batch, seq_len, input_size)
         # y: (batch, output_size(=frame_size))
-        x, y = batch['data'], batch['target']
+        x, y = batch['data'], batch['target'].float()
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
         # self.log('train_loss', loss)
@@ -115,7 +118,7 @@ class GruTrainer:
         self.val_dataloader = None
         self.device = get_gpu_device()
         
-    def _prepare_batch_wrapper(self, batch: Dict[str, DataFrame]) -> Dict[str, torch.Tensor]:
+    def _prepare_batch_wrapper(self, batch: List[Dict]) -> Dict[str, torch.Tensor]:
         return prepare_batch(batch, self.args['frame_size'])
         
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
@@ -126,12 +129,12 @@ class GruTrainer:
         # scaler_y = MinMaxScaler()
         # scaled_x = scaler_x.fit_transform(x)
         # scaled_y = scaler_y.fit_transform(y)
-        train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=0.2, shuffle=False)
+        train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
         # train, val = train_test_split(df, test_size=self.args['test_ratio'], shuffle=False)
         # trainset만 스케일링
-        scaled_train_x = scaler.fit_transform(train_x)
+        scaled_train_x = pd.DataFrame(scaler.fit_transform(train_x), columns=train_x.columns)
 
-        scaled_val_x = scaler.transform(val_x)
+        scaled_val_x = pd.DataFrame(scaler.transform(val_x), columns=val_x.columns)
         train_dataset = GrudDataset(scaled_train_x, train_y)
         val_dataset = GrudDataset(scaled_val_x, val_y)
         self.train_dataloader = DataLoader(train_dataset, 
@@ -149,10 +152,10 @@ class GruTrainer:
         self.args.update({'input_size': len(data[0][0])})
         
         # save hyperparameters
-        with open(os.path.join(self.args['save_dir'], 'hyperparameters.json'), 'w') as f:
+        with open(os.path.join(self.args['model_dir'], 'hyperparameters.json'), 'w') as f:
             json.dump(self.args, f)
         # save scaler
-        joblib.dump(scaler, os.path.join(self.args['save_dir'], 'scaler.pkl'))
+        joblib.dump(scaler, os.path.join(self.args['model_dir'], 'scaler.pkl'))
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
         
@@ -163,7 +166,7 @@ class GruTrainer:
         model = GrudModel(**self.args)
         model.to(self.device)
         checkpoint_callback = ModelCheckpoint(
-            dirpath=self.args['save_dir'],
+            dirpath=self.args['model_dir'],
             filename='grud-{epoch:02d}-{val_loss:.2f}',
             save_top_k=3,
             verbose=True,
@@ -180,7 +183,7 @@ class GruTrainer:
         if pl.__version__ == '1.7.6':
             trainer = Trainer(
                 callbacks=[checkpoint_callback, early_stop_callback],
-                max_epochs=self.args['n_epochs'],
+                max_epochs=self.args['epochs'],
                 fast_dev_run=self.args['test_mode'],
                 num_sanity_val_steps=None if self.args['test_mode'] else 0,
 
@@ -194,7 +197,7 @@ class GruTrainer:
         elif pl.__version__ == '1.4.9':
             trainer = Trainer(
                 callbacks=[checkpoint_callback, early_stop_callback],
-                max_epochs=self.args['n_epochs'],
+                max_epochs=self.args['epochs'],
                 fast_dev_run=self.args['test_mode'],
                 num_sanity_val_steps=None if self.args['test_mode'] else 0,
 
@@ -211,10 +214,10 @@ class GruTrainer:
         #     max_epochs=self.args['epochs'],
         #     callbacks=[checkpoint_callback, early_stop_callback],
         #     progress_bar_refresh_rate=20,
-        #     logger=pl.loggers.TensorBoardLogger(self.args['save_dir'])
+        #     logger=pl.loggers.TensorBoardLogger(self.args['model_dir'])
         # )
         trainer.fit(model=model, train_dataloaders=self.train_dataloader, val_dataloaders=self.val_dataloader)
-        # trainer.save_checkpoint(os.path.join(self.args['save_dir'], 'grud.ckpt'))
+        # trainer.save_checkpoint(os.path.join(self.args['model_dir'], 'grud.ckpt'))
         print('Done training')
         
                                          

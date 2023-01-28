@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 
-from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY
+from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY, TARGET_COIN_SYMBOL, TARGET_COIN_TICKER, TIME_WINDOW
 from src.component.binance.binance import Binance
 from src.module.db.redis import Redis
 from src.module.db.s3 import S3
@@ -11,10 +11,7 @@ from src.component.preprocess.preprocess import ORDER_BOOK_RANK_SIZE
 # 해당 모듈은 매 1분마다 실행되어야 한다.
 
 ROOT_DIR = os.environ.get('PYTHONPATH', os.path.dirname(os.path.abspath(__file__)))
-TARGET_COIN_TICKER = 'BTC/USDT'
-TARGET_COIN_SYMBOL = 'BTCUSDT'
 DATA_DIR = os.path.join(ROOT_DIR, 'order_books')
-TIME_WINDOW = 30
 BUKET_NAME = 'autocryptotrading'
 
 

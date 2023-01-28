@@ -1,3 +1,4 @@
 .idea
 __pycache__
 order_books
+lightning_logs

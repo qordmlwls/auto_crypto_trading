@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from torch import Tensor
 
 import numpy as np 
@@ -12,11 +12,16 @@ def rolling_window(data: np.array, window):
     return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
 
 
-def prepare_batch(batch: Dict, frame_size: int) -> Dict[str, Tensor]:
+def prepare_batch(batch: List[Dict], frame_size: int) -> Dict[str, Tensor]:
     # x: (batch_size, frame_size, feature_size) 
     # y: (batch_size, frame_size)
-    df = batch['x']
-    target = batch['y']
+    df_list_x = []
+    df_list_y = []
+    for i in range(len(batch)):
+        df_list_x.append(batch[i]['x'])
+        df_list_y.append(batch[i]['y'])
+    df = pd.concat(df_list_x, axis=1).transpose()
+    target = pd.concat(df_list_y, axis=1).transpose()
     idx_array = np.array([i for i in range(len(df))][:-1])  # 마지막 데이터는 target이 없으므로 제외
     rolling_tensor = torch.tensor(rolling_window(idx_array, frame_size))
     
