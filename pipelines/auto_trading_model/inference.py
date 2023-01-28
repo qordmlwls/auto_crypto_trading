@@ -55,10 +55,10 @@ def model_fn(model_dir):
                 file_exist = True
         if not file_exist:
             raise Exception('No model file')
-        highest_index = np.argmax([int(file_name.split('=')[2].split('.')[0]) for file_name in model_file_list])
-        highest_file_name = model_file_list[highest_index]
-        model = GrudModel.load_from_checkpoint(os.path.join(model_dir, highest_file_name), **model_config)
-        logger.info(f'Load model from {highest_file_name}')
+        lowest_index = np.argmin([int(file_name.split('=')[2].split('.')[0]) for file_name in model_file_list])
+        lowest_file_name = model_file_list[lowest_index]
+        model = GrudModel.load_from_checkpoint(os.path.join(model_dir, lowest_file_name), **model_config)
+        logger.info(f'Load model from {lowest_file_name}')
     
     except Exception as e:
         raise FileNotFoundError(f'No model file in {model_dir}') from e
@@ -69,7 +69,7 @@ def model_fn(model_dir):
 def predict_fn(input_data, model):
     logger.info('predict_fn')
     if isinstance(input_data['input_data'], torch.Tensor):
-        output = model(input_data)
+        output = model(input_data['input_data'])
         out = scaler_y.inverse_transform(output.cpu().detach().numpy())
         logger.info('Predition done')
     else:
@@ -79,14 +79,25 @@ def predict_fn(input_data, model):
 
 def output_fn(prediction, response_content_type):
     logger.info('output_fn')
-    return json.dumps({'prediction': prediction.tolist()})
+    return json.dumps({'prediction': prediction[0].tolist()})
 
 # for testing
 
-if __name__ == '__main__':
-    request_body = json.dumps({'data_list': [1,2,3]})
+# if __name__ == '__main__':
+#     ROOT_DIR = '/opt/ml/preprocessing'
+#     DATA_DIR = os.path.join(ROOT_DIR, 'data')
+#     file_list = os.listdir(DATA_DIR)
+#     data_list = []
+#     for file in file_list:
+#         if 'data_' in file:
+#             with open(os.path.join(DATA_DIR, file), 'r') as f:
+#                 data = json.load(f)
+#             data_list.append(data)
+#     data_list.sort(key=lambda x: x['ticker']['timestamp'])
+#     data_list = data_list[:30]
+#     request_body = json.dumps({'data_list': data_list})
     
-    data = input_fn(request_body, 'application/json')
-    model = model_fn(MODEL_DIR)
-    prediction = predict_fn(data, model)
-    out = output_fn(prediction, 'application/json')
+#     data = input_fn(request_body, 'application/json')
+#     model = model_fn(MODEL_DIR)
+#     prediction = predict_fn(data, model)
+#     out = output_fn(prediction, 'application/json')
