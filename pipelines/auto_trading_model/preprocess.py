@@ -8,7 +8,7 @@ from src.component.preprocess.preprocess import preprocess
 ROOT_DIR = '/opt/ml/preprocessing'
 DATA_DIR = join(ROOT_DIR, 'data')
 OUTPUT_DIR = join(ROOT_DIR, 'output')
-
+DATA_DIR = '/Users/euijinbaek/auto_crypto_trading/order_books'
 
 def main():
     file_list = os.listdir(DATA_DIR)

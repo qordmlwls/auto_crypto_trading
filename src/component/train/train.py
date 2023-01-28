@@ -125,18 +125,21 @@ class GruTrainer:
         
         x = df
         y = df[['close']].copy()
-        scaler = MinMaxScaler()
-        # scaler_y = MinMaxScaler()
+        scaler_x = MinMaxScaler()
+        scaler_y = MinMaxScaler()
         # scaled_x = scaler_x.fit_transform(x)
         # scaled_y = scaler_y.fit_transform(y)
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
         # train, val = train_test_split(df, test_size=self.args['test_ratio'], shuffle=False)
         # trainset만 스케일링
-        scaled_train_x = pd.DataFrame(scaler.fit_transform(train_x), columns=train_x.columns)
-
-        scaled_val_x = pd.DataFrame(scaler.transform(val_x), columns=val_x.columns)
-        train_dataset = GrudDataset(scaled_train_x, train_y)
-        val_dataset = GrudDataset(scaled_val_x, val_y)
+        scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
+        scaled_train_y = pd.DataFrame(scaler_y.fit_transform(train_y), columns=train_y.columns)
+        
+        scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
+        scaled_val_y = pd.DataFrame(scaler_y.transform(val_y), columns=val_y.columns)
+        
+        train_dataset = GrudDataset(scaled_train_x, scaled_train_y)
+        val_dataset = GrudDataset(scaled_val_x, scaled_val_y)
         self.train_dataloader = DataLoader(train_dataset, 
                                            batch_size=self.args['batch_size'], 
                                            shuffle=False,  # 시계열이라 막 셔플하면 안됨
@@ -155,7 +158,8 @@ class GruTrainer:
         with open(os.path.join(self.args['model_dir'], 'hyperparameters.json'), 'w') as f:
             json.dump(self.args, f)
         # save scaler
-        joblib.dump(scaler, os.path.join(self.args['model_dir'], 'scaler.pkl'))
+        joblib.dump(scaler_x, os.path.join(self.args['model_dir'], 'scaler_x.pkl'))
+        joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
         
