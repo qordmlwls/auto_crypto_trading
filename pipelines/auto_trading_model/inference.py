@@ -33,7 +33,7 @@ def input_fn(request_body, request_content_type):
     assert request_content_type == 'application/json'
     data_list = json.loads(request_body)['data_list']
     
-    df = preprocess(data_list)
+    df = preprocess(data_list)[:model_config['frame_size']]
     scaled_x = pd.DataFrame(scaler_x.transform(df), columns=df.columns)
     
     idx_array = np.array([i for i in range(len(df))])
