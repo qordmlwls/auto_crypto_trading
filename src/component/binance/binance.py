@@ -1,5 +1,6 @@
 import time
 import ccxt
+from typing import Dict
 
 
 class Binance:
@@ -15,7 +16,41 @@ class Binance:
                 'defaultType': 'future'
             },
         })  # binance 객체 생성
-
+    
+    def set_leverage(self, ticker, leverage):
+        time.sleep(0.1)
+        try:
+            self.binance.fapiPrivate_post_leverage({
+                'symbol': ticker,
+                'leverage': leverage
+            })
+        except Exception as e:
+            print('---', e)
+            
+    def position_check(self, ticker) -> Dict:
+        balance = self.binance.fetch_balance(params={"type": "future"})
+        print(balance['USDT'])
+        print("Total Balance: ", balance['USDT']['total'])  # 총 금액
+        print('Free Balance: ', balance['USDT']['free'])  # 사용 가능한 금액
+        for position in balance['info']['positions']:
+            if position['symbol'] == ticker:
+                amount = position['positionAmt']
+                isolated = position['isolated']
+            break
+        if not isolated:
+            try:
+                self.binance.fapiPrivate_post_positionmargin({
+                    'symbol': ticker, 'marginType': 'ISOLATED'
+                    })
+            except Exception as e:
+                print('---', e)
+                
+        return {
+            'amount': amount,
+            'isolated': isolated,
+            'total': balance['USDT']['total']
+        }
+        
 
 def set_stop_loss_price(binance, ticker, stop_price, rest=True):
     if rest:

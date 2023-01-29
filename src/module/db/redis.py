@@ -26,4 +26,6 @@ class Redis:
     def keys(self):
         return self.r.keys()
     
+    def all(self):
+        return self.r.mget(self.keys())
 
