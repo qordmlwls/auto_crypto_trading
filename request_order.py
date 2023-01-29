@@ -6,7 +6,7 @@ import boto3
 from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
-    LEVERAGE
+    LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis import Redis
@@ -31,12 +31,79 @@ def main():
                                     Accept='application/json',
                                     Body=request_body)
         # next 30분 각각의 예측값을 받아온다. 길이 30
-        res_data = json.loads(res['Body'].read().decode('utf-8'))
-    if res_data:
-        pass
-    else:
-        pass
+        res_data = json.loads(res['Body'].read().decode('utf-8')) 
+
+    current_price = data_list[0]['ticker']['close']
+    # 레버리지에 따를 최대 매수 가능 수량
+    max_amount = round(binance.get_amout(position['total'], current_price, 0.5), 3) * LEVERAGE
     
+    one_percent_amount = round(max_amount * 0.01, 3)
+    
+    #첫 매수 비중을 구한다.. 여기서는 5%! 
+    # * 20.0 을 하면 20%가 되겠죠? 마음껏 조절하세요!
+    first_amount = one_percent_amount * 5.0
+
+    # 비트코인의 경우 0.001로 그보다 작은 수량으로 주문을 넣으면 오류가 납니다.!
+    #최소 주문 수량을 가져온다 
+    # 해당 함수는 수강생 분이 만드신 걸로 아래 링크를 참고하세요!
+    # https://blog.naver.com/zhanggo2/222722244744
+    minimun_amount = binance.get_minimum_amout(TARGET_COIN_SYMBOL)
+    
+    #minimun_amount 안에는 최소 주문수량이 들어가 있습니다. 비트코인이니깐 0.001보다 작다면 0.001개로 셋팅해줍니다.
+    if first_amount < minimun_amount:
+        first_amount = minimun_amount
+    
+    #음수를 제거한 절대값 수량 ex -0.1 -> 0.1 로 바꿔준다.
+    abs_amt = abs(position['amount'])
+
+    
+    #0이면 포지션 잡기전
+    if abs_amt == 0:
+        # @TODO: 예측값에 따른 매수 매도 로직
+        if res_data:
+            pass
+        else:
+            pass
+        
+        # 마지막에 스탑로스를 설정해준다.
+        binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+    #0이 아니라면 포지션 잡은 상태
+    else:
+        print("------------------------------------------------------")
+        #현재까지 구매한 퍼센트! 즉 비중!! 현재 보유 수량을 1%의 수량으로 나누면 된다.
+        buy_percent = abs_amt / one_percent_amount
+        print("Buy Percent : ", buy_percent)    
+
+        #수익율을 구한다!
+        revenue_rate = (current_price - position['entry_price']) / position['entry_price'] * 100.0
+        #단 숏 포지션일 경우 수익이 나면 마이너스로 표시 되고 손실이 나면 플러스가 표시 되므로 -1을 곱하여 바꿔준다.
+        if position['amount'] < 0:
+            revenue_rate = revenue_rate * -1.0
+        #레버리지를 곱한 실제 수익율
+        leverage_revenu_rate = revenue_rate * LEVERAGE  
+        
+        print("Revenue Rate : ", revenue_rate,", Real Revenue Rate : ", leverage_revenu_rate)
+        
+        #레버리지를 곱한 실제 손절 할 마이너스 수익율
+        #레버리지를 곱하고 난 여기가 실제 내 원금 대비 실제 손실율입니다!
+        leverage_danger_rate = DANGER_RATE * LEVERAGE
+        
+        print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
+        
+        # @TODO: 이미 잡은 포지션에 따른 매수매도 로직
+        # 숏 포지션일 경우
+        if position['amount'] < 0:
+            pass
+            
+            # 마지막에 스탑로스를 설정해준다.
+            binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+        
+        # 롱 포지션일 경우
+        elif position['amount'] > 0:
+            pass
+
+            # 마지막에 스탑로스를 설정해준다.
+            binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
     
 if __name__ == '__main__':
     main()
