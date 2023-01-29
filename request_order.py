@@ -1,7 +1,9 @@
 import os
 import json
+from typing import List
 
 import boto3
+import numpy as np
 
 from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
@@ -12,13 +14,27 @@ from src.component.binance.binance import Binance
 from src.module.db.redis import Redis
 
 
+def chek_futre_price(current_price, future_price_list: List):
+    chages = [abs(future_price - current_price) for future_price in future_price_list]
+    max_index = np.argmax(chages)
+    return {
+        'max_chage': chages[max_index],
+        'max_index': max_index,
+    }
+
+
 def main():
     client = boto3.client('sagemaker-runtime')
     redis = Redis(host='localhost', port=6379, db=0)
     binance = Binance(BINANCE_API_KEY, BINANCE_SECRET_KEY)
     binance.set_leverage(TARGET_COIN_SYMBOL, LEVERAGE)
     position = binance.position_check(TARGET_COIN_SYMBOL)
-        
+    #시장가 taker 0.04, 지정가 maker 0.02 -> 시장가가 수수료가 더 비싸다.
+
+    #시장가 숏 포지션 잡기 
+    #print(binance.create_market_sell_order(Target_Coin_Ticker, 0.002))
+    #print(binance.create_order(Target_Coin_Ticker, 'market', 'sell', 0.002, None))
+    
     if redis.size() == TIME_WINDOW:
         
         data_list = redis.all()
@@ -56,14 +72,27 @@ def main():
     #음수를 제거한 절대값 수량 ex -0.1 -> 0.1 로 바꿔준다.
     abs_amt = abs(position['amount'])
 
+    if res_data:
+        futre_change = chek_futre_price(current_price, res_data)
+    else:
+        pass
     
     #0이면 포지션 잡기전
-    if abs_amt == 0:
-        # @TODO: 예측값에 따른 매수 매도 로직
-        if res_data:
-            pass
-        else:
-            pass
+    if abs_amt == 0 and res_data:
+        
+        if futre_change['change'] > 0.1:
+            print("------------------------------------------------------")
+            print("Buy", first_amount, TARGET_COIN_SYMBOL)
+            print("------------------------------------------------------")
+            #매수 주문을 넣는다.
+            binance.create_order(TARGET_COIN_SYMBOL, first_amount, 'BUY', current_price)
+        elif futre_change['change'] < -0.1:
+            print("------------------------------------------------------")
+            print("Sell", first_amount, TARGET_COIN_SYMBOL)
+            print("------------------------------------------------------")
+            #매도 주문을 넣는다.
+            binance.create_order(TARGET_COIN_SYMBOL, first_amount, 'SELL', current_price)
+
         
         # 마지막에 스탑로스를 설정해준다.
         binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
@@ -87,20 +116,57 @@ def main():
         #레버리지를 곱한 실제 손절 할 마이너스 수익율
         #레버리지를 곱하고 난 여기가 실제 내 원금 대비 실제 손실율입니다!
         leverage_danger_rate = DANGER_RATE * LEVERAGE
-        
-        print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
-        
         # @TODO: 이미 잡은 포지션에 따른 매수매도 로직
+        #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
+        amount = one_percent_amount * 5.0
+        if amount < minimun_amount:
+            amount = minimun_amount
+        print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
+        if leverage_revenu_rate > 0.5:
+            if position['amount'] > 0:
+                # 5% 매도
+                print('------------------------------------------------------')
+                print('이익 0.5% 이상이므로 5% 매도')
+                binance.create_order(TARGET_COIN_SYMBOL, amount, 'SELL', current_price)
+                position['amount'] = position['amount'] - amount
+            elif position['amount'] < 0:
+                print('------------------------------------------------------')
+                print('이익 0.5% 이상이므로 5% 매수')
+                binance.create_order(TARGET_COIN_SYMBOL, amount, 'BUY', current_price)
+                position['amount'] = position['amount'] + amount
+
         # 숏 포지션일 경우
-        if position['amount'] < 0:
-            pass
+        if position['amount'] < 0 and res_data:
+            if futre_change['change'] < - 0.1:
+                # 5% 추가 매도
+                print("------------------------------------------------------")
+                print("Sell", amount, TARGET_COIN_SYMBOL)
+                binance.create_order(TARGET_COIN_SYMBOL, amount, 'SELL', current_price)
+                print("------------------------------------------------------")
+            elif futre_change['change'] > 0.1:
+                # 포지션 종료, 5% 추가 매수
+                print("------------------------------------------------------")
+                print("Buy", amount, TARGET_COIN_SYMBOL)
+                binance.create_order(TARGET_COIN_SYMBOL, amount + abs_amt, 'BUY', current_price)
+                print("------------------------------------------------------")
             
             # 마지막에 스탑로스를 설정해준다.
             binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
         
         # 롱 포지션일 경우
-        elif position['amount'] > 0:
-            pass
+        elif position['amount'] > 0 and res_data:
+            if futre_change['change'] > 0.1:
+                # 5% 추가 매수
+                print("------------------------------------------------------")
+                print("Buy", amount, TARGET_COIN_SYMBOL)
+                binance.create_order(TARGET_COIN_SYMBOL, amount, 'BUY', current_price)
+                print("------------------------------------------------------")
+            elif futre_change['change'] < -0.1:
+                # 포지션 종료, 5% 추가 매도
+                print("------------------------------------------------------")
+                print("Sell", amount, TARGET_COIN_SYMBOL)
+                binance.create_order(TARGET_COIN_SYMBOL, amount + abs_amt, 'SELL', current_price)
+                print("------------------------------------------------------")
 
             # 마지막에 스탑로스를 설정해준다.
             binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)

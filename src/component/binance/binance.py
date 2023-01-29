@@ -92,6 +92,14 @@ class Binance:
                 min_order_cost = min_price * (num_min_amount * min_amount)
 
         return num_min_amount * min_amount
+    
+    # 지정가로 매수한다. 첫번째: 코인 티커, 두번째: 포지션, 세번째: 매수 수량, 네번째: 매수 가격
+    def create_order(self, ticker, side, amount, price):
+        time.sleep(0.1)
+        try:
+            self.binance.create_order(ticker, 'limit', side, amount, price)
+        except Exception as e:
+            print('---', e)
 
     #스탑로스를 걸어놓는다. 해당 가격에 해당되면 바로 손절한다. 첫번째: 바이낸스 객체, 두번째: 코인 티커, 세번째: 손절 수익율 (1.0:마이너스100% 청산, 0.9:마이너스 90%, 0.5: 마이너스 50%)
     #네번째 웹훅 알림에서 사용할때는 마지막 파라미터를 False로 넘겨서 사용한다. 트레이딩뷰 웹훅 강의 참조..
