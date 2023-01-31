@@ -13,17 +13,17 @@ ROOT_DIR = os.environ.get('PYTHONPATH', '')
 DATA_DIR = os.path.join(ROOT_DIR, 'order_books')
 
 print(os.path.dirname(os.path.abspath(__file__)))
-# binance = ccxt.binance(config={
-#     'apikey': BINANCE_API_KEY,
-#     'secret': BINANCE_SECRET_KEY,
-#     'enableRateLimit': True,
-#     'options': {
-#         'defaultType': 'future'
-#     }
-# })
+binance = ccxt.binance(config={
+    'apikey': BINANCE_API_KEY,
+    'secret': BINANCE_SECRET_KEY,
+    'enableRateLimit': True,
+    'options': {
+        'defaultType': 'future'
+    }
+})
 
-# btc = binance.fetch_ticker(TARGET_COIN_TICKER)
-# pprint.pprint(btc)
+btc = binance.fetch_ticker(TARGET_COIN_TICKER)
+pprint.pprint(btc)
 # tohlcv = binance.fetch_ohlcv(
 #     symbol=TARGET_COIN_SYMBOL,
 #     timeframe="1m",

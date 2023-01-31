@@ -4,3 +4,4 @@ pytorch-lightning==1.7.6
 db-dtypes==1.0.3
 sagemaker==2.116.0
 redis==3.0.1
+tqdm==4.62.0
