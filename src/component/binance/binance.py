@@ -39,15 +39,18 @@ class Binance:
                 amount = float(position['positionAmt'])
                 isolated = position['isolated']
                 entry_price = float(position['entryPrice'])
-                unrealized_pnl = float(position['unRealizedProfit'])
-            break
+                unrealized_pnl = float(position['unrealizedProfit'])
+                break
         if not isolated:
             try:
-                self.binance.fapiPrivate_post_positionmargin({
+                response = self.binance.fapiPrivate_post_margintype({
                     'symbol': ticker, 'marginType': 'ISOLATED'
                     })
+                if response['msg'] == 'success':
+                    isolated = True
             except Exception as e:
                 print('---', e)
+            
                 
         return {
             'amount': amount,

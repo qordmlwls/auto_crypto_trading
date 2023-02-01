@@ -4,7 +4,7 @@ from datetime import datetime
 
 from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY, TARGET_COIN_SYMBOL, TARGET_COIN_TICKER, TIME_WINDOW
 from src.component.binance.binance import Binance
-from src.module.db.redis import Redis
+from src.module.db.redis.redis import Redis
 from src.module.db.s3 import S3
 from src.component.preprocess.preprocess import ORDER_BOOK_RANK_SIZE
 

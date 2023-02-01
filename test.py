@@ -5,7 +5,7 @@ import ccxt
 from datetime import datetime, timedelta
 
 from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY
-from src.module.db.redis import Redis
+from src.module.db.redis.redis import Redis
 
 TARGET_COIN_TICKER = 'BTC/USDT'
 TARGET_COIN_SYMBOL = 'BTCUSDT'

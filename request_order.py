@@ -12,7 +12,7 @@ from src.component.binance.constraint import (
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE
 )
 from src.component.binance.binance import Binance
-from src.module.db.redis import Redis
+from src.module.db.redis.redis import Redis
 
 
 def chek_futre_price(current_price, future_price_list: List):
@@ -38,8 +38,9 @@ def main():
     
     if redis.size() == TIME_WINDOW:
         
-        data_list = redis.all()
-        data_list.sort(key=lambda x: x['ticker']['timestamp'])
+        keys = list(redis.keys())
+        keys.sort()
+        data_list = redis.get_many(keys)
         request_body = json.dumps({
             "data_list": data_list
         })
@@ -50,7 +51,7 @@ def main():
         # next 30분 각각의 예측값을 받아온다. 길이 30
         res_data = json.loads(res['Body'].read().decode('utf-8')) 
 
-    current_price = data_list[0]['ticker']['close']
+    current_price = data_list[0]['close']
     # 레버리지에 따를 최대 매수 가능 수량
     max_amount = round(binance.get_amout(position['total'], current_price, 0.5), 3) * LEVERAGE
     
@@ -64,7 +65,7 @@ def main():
     #최소 주문 수량을 가져온다 
     # 해당 함수는 수강생 분이 만드신 걸로 아래 링크를 참고하세요!
     # https://blog.naver.com/zhanggo2/222722244744
-    minimun_amount = binance.get_minimum_amout(TARGET_COIN_SYMBOL)
+    minimun_amount = binance.get_minimum_amout(TARGET_COIN_TICKER)
     
     #minimun_amount 안에는 최소 주문수량이 들어가 있습니다. 비트코인이니깐 0.001보다 작다면 0.001개로 셋팅해줍니다.
     if first_amount < minimun_amount:
@@ -83,18 +84,18 @@ def main():
         
         if futre_change['change'] > 0.1:
             print("------------------------------------------------------")
-            print("Buy", first_amount, TARGET_COIN_SYMBOL)
+            print("Buy", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
             #매수 주문을 넣는다.
-            binance.create_order(TARGET_COIN_SYMBOL, first_amount, 'buy', current_price)
-            binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+            binance.create_order(TARGET_COIN_TICKER, first_amount, 'buy', current_price)
+            binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
         elif futre_change['change'] < -0.1:
             print("------------------------------------------------------")
-            print("Sell", first_amount, TARGET_COIN_SYMBOL)
+            print("Sell", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
             #매도 주문을 넣는다.
-            binance.create_order(TARGET_COIN_SYMBOL, first_amount, 'sell', current_price)
-            binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+            binance.create_order(TARGET_COIN_TICKER, first_amount, 'sell', current_price)
+            binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
         
     #0이 아니라면 포지션 잡은 상태
@@ -128,38 +129,38 @@ def main():
                 # 5% 매도
                 print('------------------------------------------------------')
                 print('이익 0.5% 이상이므로 5% 매도')
-                binance.create_order(TARGET_COIN_SYMBOL, amount, 'sell', current_price)
+                binance.create_order(TARGET_COIN_TICKER, amount, 'sell', current_price)
                 position['amount'] = position['amount'] - amount
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position['amount'] < 0:
                 print('------------------------------------------------------')
                 print('이익 0.5% 이상이므로 5% 매수')
-                binance.create_order(TARGET_COIN_SYMBOL, amount, 'buy', current_price)
+                binance.create_order(TARGET_COIN_TICKER, amount, 'buy', current_price)
                 position['amount'] = position['amount'] + amount
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
         # 숏 포지션일 경우
         if position['amount'] < 0 and res_data:
             if futre_change['change'] < - 0.1:
                 # 5% 추가 매도
                 print("------------------------------------------------------")
-                print("Sell", amount, TARGET_COIN_SYMBOL)
-                binance.create_order(TARGET_COIN_SYMBOL, amount, 'sell', current_price)
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                print("Sell", amount, TARGET_COIN_TICKER)
+                binance.create_order(TARGET_COIN_TICKER, amount, 'sell', current_price)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 print("------------------------------------------------------")
             elif futre_change['change'] > 0.1:
                 # 포지션 종료, 5% 추가 매수
                 print("------------------------------------------------------")
-                print("Buy", amount, TARGET_COIN_SYMBOL)
-                binance.create_order(TARGET_COIN_SYMBOL, amount + abs_amt, 'buy', current_price)
+                print("Buy", amount, TARGET_COIN_TICKER)
+                binance.create_order(TARGET_COIN_TICKER, amount + abs_amt, 'buy', current_price)
                 print("------------------------------------------------------")
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
                 
                 #주문 취소후
-                binance.cancel_all_orders(TARGET_COIN_SYMBOL)
+                binance.cancel_all_orders(TARGET_COIN_TICKER)
                 time.sleep(0.1)
                 '''
                 #클래스에선 수수료 절감 차원에서 지정가로 잡았지만 단점은 100% 포지션이 종료되거나 잡힌다는 보장이 없다는 점입니다.
@@ -173,33 +174,33 @@ def main():
                 #따라서 여기서는 시장가로 잡습니다 <- 이렇게 하는걸 권장드려요!
                 #숏 포지션을 잡는다
                 #print(binanceX.create_market_sell_order(Target_Coin_Ticker, abs_amt / 2.0))
-                print(binance.create_market_order(TARGET_COIN_SYMBOL, 'buy', abs_amt / 2.0))
+                print(binance.create_market_order(TARGET_COIN_TICKER, 'buy', abs_amt / 2.0))
 
                 #스탑 로스 설정을 건다.
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
         
         # 롱 포지션일 경우
         elif position['amount'] > 0 and res_data:
             if futre_change['change'] > 0.1:
                 # 5% 추가 매수
                 print("------------------------------------------------------")
-                print("Buy", amount, TARGET_COIN_SYMBOL)
-                binance.create_order(TARGET_COIN_SYMBOL, amount, 'buy', current_price)
+                print("Buy", amount, TARGET_COIN_TICKER)
+                binance.create_order(TARGET_COIN_TICKER, amount, 'buy', current_price)
                 print("------------------------------------------------------")
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif futre_change['change'] < -0.1:
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
-                print("Sell", amount, TARGET_COIN_SYMBOL)
-                binance.create_order(TARGET_COIN_SYMBOL, amount + abs_amt, 'sell', current_price)
+                print("Sell", amount, TARGET_COIN_TICKER)
+                binance.create_order(TARGET_COIN_TICKER, amount + abs_amt, 'sell', current_price)
                 print("------------------------------------------------------")
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
                 
                 #주문 취소후
-                binance.cancel_all_orders(TARGET_COIN_SYMBOL)
+                binance.cancel_all_orders(TARGET_COIN_TICKER)
                 time.sleep(0.1)
                 '''
                 #클래스에선 수수료 절감 차원에서 지정가로 잡았지만 단점은 100% 포지션이 종료되거나 잡힌다는 보장이 없다는 점입니다.
@@ -213,10 +214,10 @@ def main():
                 #따라서 여기서는 시장가로 잡습니다 <- 이렇게 하는걸 권장드려요!
                 #숏 포지션을 잡는다
                 #print(binanceX.create_market_sell_order(Target_Coin_Ticker, abs_amt / 2.0))
-                print(binance.create_market_order(TARGET_COIN_SYMBOL, 'sell', abs_amt / 2.0))
+                print(binance.create_market_order(TARGET_COIN_TICKER, 'sell', abs_amt / 2.0))
 
                 #스탑 로스 설정을 건다.
-                binance.set_stop_loss(TARGET_COIN_SYMBOL, STOP_LOSS_RATE)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
     
 if __name__ == '__main__':
