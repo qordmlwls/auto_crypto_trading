@@ -187,7 +187,7 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
-        endpoint_instance_type="ml.t3.medium",
+        endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1):
     sagemaker_session = get_session(region, default_bucket)
     if role is None:

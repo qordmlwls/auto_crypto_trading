@@ -172,7 +172,7 @@ class GruTrainer:
         checkpoint_callback = ModelCheckpoint(
             dirpath=self.args['model_dir'],
             filename='grud-{epoch:02d}-{val_loss:.2f}',
-            save_top_k=3,
+            save_top_k=1,
             verbose=True,
             monitor='val_loss',
             mode='min',
