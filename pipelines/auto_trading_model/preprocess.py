@@ -8,7 +8,7 @@ from distutils.dir_util import copy_tree
 from src.component.preprocess.preprocess import preprocess
 
 
-ROOT_DIR = '/opt/ml/preprocessing'
+ROOT_DIR = '/opt/ml/processing'
 DATA_DIR = join(ROOT_DIR, 'data')
 OUTPUT_DIR = join(ROOT_DIR, 'output')
 TRAIN_CODE_DIR = join(ROOT_DIR, 'code')

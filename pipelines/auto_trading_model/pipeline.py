@@ -100,10 +100,10 @@ def get_preprocessing_step(role,
             ),
         ],
         outputs=[
-            ProcessingOutput(output_name='preprocessed', source='/opt/ml/preprocessing/output'),
-            ProcessingOutput(output_name='code', source='/opt/ml/preprocessing/code', 
+            ProcessingOutput(output_name='preprocessed', source='/opt/ml/processing/output'),
+            ProcessingOutput(output_name='code', source='/opt/ml/processing/code', 
                              destination='s3://autocryptotrading/code'),
-            ProcessingOutput(output_name='deploy_code', source='/opt/ml/preprocessing/deploy_code',
+            ProcessingOutput(output_name='deploy_code', source='/opt/ml/processing/deploy_code',
                              destination='s3://autocryptotrading/deploy_code')
         ]
     )
