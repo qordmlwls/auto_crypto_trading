@@ -93,13 +93,13 @@ asg = boto3.client('application-autoscaling')
 resource_id=f"endpoint/{args.endpoint_name}/variant/AllTraffic"
 
 # scaling configuration
-response = asg.register_scalable_target(
-    ServiceNamespace='sagemaker', 
-    ResourceId=resource_id,
-    ScalableDimension='sagemaker:variant:DesiredInstanceCount', 
-    MinCapacity=2,
-    MaxCapacity=5
-)
+# response = asg.register_scalable_target(
+#     ServiceNamespace='sagemaker', 
+#     ResourceId=resource_id,
+#     ScalableDimension='sagemaker:variant:DesiredInstanceCount', 
+#     MinCapacity=2,
+#     MaxCapacity=5
+# )
 
 
 # #Target Scaling
