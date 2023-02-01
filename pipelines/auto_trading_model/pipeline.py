@@ -96,7 +96,7 @@ def get_preprocessing_step(role,
         inputs=[
             ProcessingInput(
                 source='s3://autocryptotrading/data',
-                destination='/opt/ml/preprocessing/data'
+                destination='/opt/ml/processing/data'
             ),
         ],
         outputs=[
