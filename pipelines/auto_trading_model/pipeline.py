@@ -205,7 +205,7 @@ def get_pipeline(
                                              instance_type="ml.m5.12xlarge"
                                              )
     training_inputs = {
-        "interaction_data": TrainingInput(
+        "crypto_data": TrainingInput(
             s3_data=step_preprocess.properties.ProcessingOutputConfig.Outputs[
                 'preprocessed'
             ].S3Output.S3Uri

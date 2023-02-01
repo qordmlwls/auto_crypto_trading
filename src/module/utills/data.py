@@ -37,25 +37,25 @@ def prepare_batch(batch: List[Dict], frame_size: int) -> Dict[str, Tensor]:
 if __name__ == '__main__':
     data = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     # for test
-    import pandas as pd
-    import json
-    from src.component.preprocess.preprocess import preprocess
-    import torch
-    with open('/Users/euijinbaek/auto_crypto_trading/order_books/data_202301231657.json', 'r') as f:
-        data = json.load(f)
-    with open('/Users/euijinbaek/auto_crypto_trading/order_books/data_202301232240.json', 'r') as f:
-        data2 = json.load(f)
-    with open('/Users/euijinbaek/auto_crypto_trading/order_books/data_202301232253.json', 'r') as f:
-        data3 = json.load(f)
-    data_list = [data, data2, data3]
-    df = preprocess(data_list)
-    idx_array = np.array([i for i in range(len(df))][:-1])
-    WINDOW_SIZE = 30
-    rolling_tensor = torch.tensor(rolling_window(idx_array, WINDOW_SIZE))
+    # import pandas as pd
+    # import json
+    # from src.component.preprocess.preprocess import preprocess
+    # import torch
+    # with open('/Users/euijinbaek/auto_crypto_trading/order_books/data_202301231657.json', 'r') as f:
+    #     data = json.load(f)
+    # with open('/Users/euijinbaek/auto_crypto_trading/order_books/data_202301232240.json', 'r') as f:
+    #     data2 = json.load(f)
+    # with open('/Users/euijinbaek/auto_crypto_trading/order_books/data_202301232253.json', 'r') as f:
+    #     data3 = json.load(f)
+    # data_list = [data, data2, data3]
+    # df = preprocess(data_list)
+    # idx_array = np.array([i for i in range(len(df))][:-1])
+    # WINDOW_SIZE = 30
+    # rolling_tensor = torch.tensor(rolling_window(idx_array, WINDOW_SIZE))
     
-    embedding = torch.tensor(df.values)
-    time_embedding = embedding[rolling_tensor.long()]
-    target = rolling_window(df['close'].values[1:], WINDOW_SIZE)
+    # embedding = torch.tensor(df.values)
+    # time_embedding = embedding[rolling_tensor.long()]
+    # target = rolling_window(df['close'].values[1:], WINDOW_SIZE)
     
     print(rolling_window(data, 3))
     print(rolling_window(data, 4))
