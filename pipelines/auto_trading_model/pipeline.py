@@ -95,16 +95,16 @@ def get_preprocessing_step(role,
         processor=processor,
         inputs=[
             ProcessingInput(
-                source='s3://autocryptotrading/data',
+                source='s3://sagemaker-autocryptotrading/data',
                 destination='/opt/ml/processing/data'
             ),
         ],
         outputs=[
             ProcessingOutput(output_name='preprocessed', source='/opt/ml/processing/output'),
             ProcessingOutput(output_name='code', source='/opt/ml/processing/code', 
-                             destination='s3://autocryptotrading/code'),
+                             destination='s3://sagemaker-autocryptotrading/code'),
             ProcessingOutput(output_name='deploy_code', source='/opt/ml/processing/deploy_code',
-                             destination='s3://autocryptotrading/deploy_code')
+                             destination='s3://sagemaker-autocryptotrading/deploy_code')
         ]
     )
     
@@ -122,7 +122,7 @@ def get_train_step(role,
         instance_count=1,
         volume_size=50,
         input_mode='File',
-        source_dir='s3://autocryptotrading/code/code.tar.gz',
+        source_dir='s3://sagemaker-autocryptotrading/code/code.tar.gz',
         entry_point='train.py',
         sagemaker_session=pipeline_session
     )
@@ -177,7 +177,7 @@ def get_deploy_processing_step(role,
             "--endpoint_instance_count", endpoint_instance_count,
             "--endpoint_name", "Autotrading-Endpoint"
         ],
-        code="s3://autocryptotrading/deploy_code/deploy_model.py"
+        code="s3://sagemaker-autocryptotrading/deploy_code/deploy_model.py"
     )
 
 

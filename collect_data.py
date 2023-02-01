@@ -12,7 +12,7 @@ from src.component.preprocess.preprocess import ORDER_BOOK_RANK_SIZE
 
 ROOT_DIR = os.environ.get('PYTHONPATH', os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT_DIR, 'order_books')
-BUKET_NAME = 'autocryptotrading'
+BUKET_NAME = 'sagemaker-autocryptotrading'
 
 
 
