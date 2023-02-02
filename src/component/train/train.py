@@ -2,7 +2,7 @@ import os
 import json
 from torch import Tensor
 from pandas import DataFrame
-from typing import NoReturn, Dict, List
+from typing import NoReturn, Dict, List, Tuple
 
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.model_selection import train_test_split
@@ -96,7 +96,7 @@ class GrudModel(LightningModule):
 
 
 class GrudDataset(Dataset):
-    def __init__(self, x: DataFrame, y: DataFrame):
+    def __init__(self, x: List[DataFrame], y: List[DataFrame]):
         self.x = x
         self.y = y
 
@@ -105,8 +105,8 @@ class GrudDataset(Dataset):
 
     def __getitem__(self, idx) -> Dict[str, DataFrame]:
         return {
-            'x': self.x.iloc[idx],
-            'y': self.y.iloc[idx]
+            'x': self.x[idx],
+            'y': self.y[idx]
         }
     
 
@@ -120,6 +120,17 @@ class GruTrainer:
         
     def _prepare_batch_wrapper(self, batch: List[Dict]) -> Dict[str, torch.Tensor]:
         return prepare_batch(batch, self.args['frame_size'])
+    
+    def _build_sequence(self, train: DataFrame, test: DataFrame) -> Tuple[List, List]:
+        data_x = []
+        data_y = []
+        for i in range(len(train) - self.args['frame_size']):
+            _x = train[i: i + self.args['frame_size']]
+            _y = test[i + self.args['frame_size']]
+            data_x.append(_x)
+            data_y.append(_y)
+            
+        return data_x, data_y
         
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
         
@@ -138,18 +149,23 @@ class GruTrainer:
         scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
         scaled_val_y = pd.DataFrame(scaler_y.transform(val_y), columns=val_y.columns)
         
-        train_dataset = GrudDataset(scaled_train_x, scaled_train_y)
-        val_dataset = GrudDataset(scaled_val_x, scaled_val_y)
+        train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
+        val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
+        
+        train_dataset = GrudDataset(train_x, train_y)
+        val_dataset = GrudDataset(val_x, val_y)
         self.train_dataloader = DataLoader(train_dataset, 
                                            batch_size=self.args['batch_size'], 
                                            shuffle=False,  # 시계열이라 막 셔플하면 안됨
                                            num_workers=self.args['cpu_workers'],
-                                           collate_fn=self._prepare_batch_wrapper)
+                                           collate_fn=self._prepare_batch_wrapper,
+                                           drop_last=True)
         self.val_dataloader = DataLoader(val_dataset,
                                          batch_size=self.args['batch_size'],
                                          shuffle=False,
                                          num_workers=self.args['cpu_workers'],
-                                         collate_fn=self._prepare_batch_wrapper)
+                                         collate_fn=self._prepare_batch_wrapper,
+                                         drop_last=True)
         test_batch = next(iter(self.val_dataloader))
         data, target = test_batch['data'], test_batch['target']
         self.args.update({'input_size': len(data[0][0])})

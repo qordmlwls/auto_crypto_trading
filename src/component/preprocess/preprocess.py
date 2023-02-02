@@ -41,8 +41,8 @@ def preprocess(data_list: List) -> pd.DataFrame:
         # 현 시점 데이터
         df_list.append(price)
     df = pd.concat(df_list)
-    # truncate df for time series
-    if len(df) % TIME_WINDOW != 0:
-        df = df.iloc[(len(df) % TIME_WINDOW):]
+    # # truncate df for time series
+    # if len(df) % TIME_WINDOW != 0:
+    #     df = df.iloc[(len(df) % TIME_WINDOW):]
     return df
     
