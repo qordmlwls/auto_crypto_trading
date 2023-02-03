@@ -121,13 +121,17 @@ class GruTrainer:
     def _prepare_batch_wrapper(self, batch: List[Dict]) -> Dict[str, torch.Tensor]:
         return prepare_batch(batch, self.args['frame_size'])
     
+    # rolling window
     def _build_sequence(self, train: DataFrame, test: DataFrame) -> Tuple[List, List]:
         data_x = []
         data_y = []
-        for i in range(len(train) - self.args['frame_size']):
+        # x는 맨 마지막 step을 제외하고, y는 맨 첫번째 step을 제외하고
+        for i in range(len(train) - 2 * self.args['frame_size']):
             _x = train[i: i + self.args['frame_size']]
-            _y = test[i + self.args['frame_size']]
             data_x.append(_x)
+            
+        for j in range(self.args['frame_size'], len(train) - self.args['frame_size']):
+            _y = test[j: j + self.args['frame_size']]
             data_y.append(_y)
             
         return data_x, data_y
@@ -159,13 +163,15 @@ class GruTrainer:
                                            shuffle=False,  # 시계열이라 막 셔플하면 안됨
                                            num_workers=self.args['cpu_workers'],
                                            collate_fn=self._prepare_batch_wrapper,
-                                           drop_last=True)
+                                        #    drop_last=True
+                                           )
         self.val_dataloader = DataLoader(val_dataset,
                                          batch_size=self.args['batch_size'],
                                          shuffle=False,
                                          num_workers=self.args['cpu_workers'],
                                          collate_fn=self._prepare_batch_wrapper,
-                                         drop_last=True)
+                                        #  drop_last=True
+                                         )
         test_batch = next(iter(self.val_dataloader))
         data, target = test_batch['data'], test_batch['target']
         self.args.update({'input_size': len(data[0][0])})

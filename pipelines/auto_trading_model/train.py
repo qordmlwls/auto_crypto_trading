@@ -46,7 +46,7 @@ if __name__ == '__main__':
     train_data = pd.concat(raw_train)
     
     logger.info('Saving data...')
-    copy_tree('/opt/ml/code', '/opt/ml/model/code')
+    # copy_tree('/opt/ml/code', '/opt/ml/model/code')
     
     logger.info('Start training...')
     gru_trainer = GruTrainer(**model_config)

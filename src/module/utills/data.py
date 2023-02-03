@@ -15,18 +15,21 @@ def rolling_window(data: np.array, window):
 def prepare_batch(batch: List[Dict], frame_size: int) -> Dict[str, Tensor]:
     # x: (batch_size, frame_size, feature_size) 
     # y: (batch_size, frame_size)
-    df_list_x = []
-    df_list_y = []
+    tensor_list_x = []
+    tensor_list_y = []
     for i in range(len(batch)):
-        df_list_x.append(batch[i]['x'])
-        df_list_y.append(batch[i]['y'])
-    df = pd.concat(df_list_x, axis=1).transpose()
-    target = pd.concat(df_list_y, axis=1).transpose()
-    idx_array = np.array([i for i in range(len(df))][:-1])  # 마지막 데이터는 target이 없으므로 제외
-    rolling_tensor = torch.tensor(rolling_window(idx_array, frame_size))
+        tensor_list_x.append(torch.tensor(batch[i]['x'].values))
+        tensor_list_y.append(torch.tensor(batch[i]['y'].values))
     
-    embedding = torch.tensor(df.values)
-    time_embedding = embedding[rolling_tensor.long()]
+    # df = pd.concat(df_list_x)
+    # target = pd.concat(df_list_y)
+    # idx_array = np.array([i for i in range(len(df))][:-1])  # 마지막 데이터는 target이 없으므로 제외
+    # rolling_tensor = torch.tensor(rolling_window(idx_array, frame_size))
+    
+    # embedding = torch.tensor(df.values)
+    # time_embedding = embedding[rolling_tensor.long()]
+    time_embedding = torch.stack(tensor_list_x, dim=0)
+    target = torch.stack(tensor_list_y, dim=0).squeeze(2)
     target = torch.tensor(rolling_window(target['close'].values[1:], frame_size))  # 첫번째 target은 데이터가 없으므로 제외
     return {
         'data': time_embedding,
