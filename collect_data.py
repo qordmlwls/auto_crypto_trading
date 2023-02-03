@@ -39,7 +39,9 @@ def main():
     if redis.size() >= TIME_WINDOW:
         keys = list(redis.keys())
         keys.sort()
-        redis.delete(keys[0])
+        for key in keys[:len(keys) - TIME_WINDOW + 1]:
+            redis.delete(key)
+        # redis.delete(keys[0])
 
     data_redis = {
         'open': ticker['open'],

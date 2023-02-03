@@ -8,7 +8,7 @@ BINANCE_SECRET_KEY = os.environ.get('BINANCE_SECRET_KEY', '')
 TARGET_COIN_TICKER = 'BTC/USDT'
 TARGET_COIN_SYMBOL = 'BTCUSDT'
 
-TIME_WINDOW = 30
+TIME_WINDOW = 15
 
 LEVERAGE = 3
 #아래는 타겟 수익율로 마음껏 조절하세요
@@ -21,3 +21,6 @@ TARGET_REVENUE_RATE = TARGET_RATE * 100.0
 STOP_LOSS_RATE = 0.5
 # 손절 마이너스 수익률
 DANGER_RATE = -5.0
+
+# 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
+FUTURE_PRICE_RATE = 0.4

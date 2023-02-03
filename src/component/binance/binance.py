@@ -40,17 +40,17 @@ class Binance:
                 isolated = position['isolated']
                 entry_price = float(position['entryPrice'])
                 unrealized_pnl = float(position['unrealizedProfit'])
+                
+                if not isolated:
+                    try:
+                        response = self.binance.fapiPrivate_post_margintype({
+                            'symbol': ticker, 'marginType': 'ISOLATED'
+                            })
+                        if response['msg'] == 'success':
+                            isolated = True
+                    except Exception as e:
+                        print('---', e)
                 break
-        if not isolated:
-            try:
-                response = self.binance.fapiPrivate_post_margintype({
-                    'symbol': ticker, 'marginType': 'ISOLATED'
-                    })
-                if response['msg'] == 'success':
-                    isolated = True
-            except Exception as e:
-                print('---', e)
-            
                 
         return {
             'amount': amount,
@@ -136,12 +136,13 @@ class Binance:
                 stop_loss_ok = True
                 break
         
+        # 스탑로스가 없으면 스탑로스를 건다.
         if not stop_loss_ok:
             
             if rest:
                 time.sleep(10.0)
-
-            position = self.position_check(ticker)
+            target_symbol = ticker.replace("/", "")
+            position = self.position_check(target_symbol)
             #롱일땐 숏을 잡아야 되고
             side = "sell"
             #숏일땐 롱을 잡아야 한다.
