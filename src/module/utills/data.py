@@ -30,7 +30,7 @@ def prepare_batch(batch: List[Dict], frame_size: int) -> Dict[str, Tensor]:
     # time_embedding = embedding[rolling_tensor.long()]
     time_embedding = torch.stack(tensor_list_x, dim=0)
     target = torch.stack(tensor_list_y, dim=0).squeeze(2)
-    target = torch.tensor(rolling_window(target['close'].values[1:], frame_size))  # 첫번째 target은 데이터가 없으므로 제외
+    # target = torch.tensor(rolling_window(target['close'].values[1:], frame_size))  # 첫번째 target은 데이터가 없으므로 제외
     return {
         'data': time_embedding,
         'target': target
