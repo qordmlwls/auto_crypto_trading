@@ -19,7 +19,7 @@ def chek_futre_price(current_price, future_price_list: List):
     chages = [abs(future_price - current_price) for future_price in future_price_list]
     max_index = np.argmax(chages)
     return {
-        'max_chage': chages[max_index],
+        'max_chage': (future_price_list[max_index] - current_price) / current_price * 100,
         'max_index': max_index,
     }
 
@@ -49,9 +49,9 @@ def main():
                                     Accept='application/json',
                                     Body=request_body)
         # next 30분 각각의 예측값을 받아온다. 길이 30
-        res_data = json.loads(res['Body'].read().decode('utf-8')) 
+        res_data = json.loads(res['Body'].read().decode('utf-8'))['prediction']
 
-    current_price = data_list[0]['close']
+    current_price = data_list[-1]['close']
     # 레버리지에 따를 최대 매수 가능 수량
     max_amount = round(binance.get_amout(position['total'], current_price, 0.5), 3) * LEVERAGE
     
