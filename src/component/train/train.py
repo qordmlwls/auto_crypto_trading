@@ -119,7 +119,7 @@ class GruTrainer:
         self.device = get_gpu_device()
         
     def _prepare_batch_wrapper(self, batch: List[Dict]) -> Dict[str, torch.Tensor]:
-        return prepare_batch(batch, self.args['frame_size'])
+        return prepare_batch(batch)
     
     # rolling window
     def _build_sequence(self, train: DataFrame, test: DataFrame) -> Tuple[List, List]:
@@ -202,7 +202,7 @@ class GruTrainer:
         early_stop_callback = EarlyStopping(
             monitor='val_loss',
             min_delta=0.00,
-            patience=10,
+            patience=100,
             verbose=False,
             mode='min'
         )

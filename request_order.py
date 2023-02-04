@@ -43,16 +43,16 @@ def main():
         keys = list(redis.keys())
         keys.sort()
         data_list = redis.get_many(keys)
-        # request_body = json.dumps({
-        #     "data_list": data_list
-        # })
-        # res = client.invoke_endpoint(EndpointName='Autotrading-Endpoint',
-        #                             ContentType='application/json',
-        #                             Accept='application/json',
-        #                             Body=request_body)
-        # # next 30분 각각의 예측값을 받아온다. 길이 30
-        # res_data = json.loads(res['Body'].read().decode('utf-8'))['prediction']
-        res_data = [24000 for _ in range(30)]
+        request_body = json.dumps({
+            "data_list": data_list
+        })
+        res = client.invoke_endpoint(EndpointName='Autotrading-Endpoint',
+                                    ContentType='application/json',
+                                    Accept='application/json',
+                                    Body=request_body)
+        # next 30분 각각의 예측값을 받아온다. 길이 30
+        res_data = json.loads(res['Body'].read().decode('utf-8'))['prediction']
+        # res_data = [24000 for _ in range(30)]
     
     current_price = data_list[-1]['close']
     # 레버리지에 따를 최대 매수 가능 수량
