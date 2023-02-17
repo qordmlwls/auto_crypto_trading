@@ -1,8 +1,10 @@
+import os
 from typing import Dict, List
 from torch import Tensor
 
 import numpy as np 
 import pandas as pd
+from multiprocessing import Pool
 import torch
 
 
@@ -35,7 +37,19 @@ def prepare_batch(batch: List[Dict], frame_size: int) -> Dict[str, Tensor]:
         'data': time_embedding,
         'target': target
     }
-    
+
+
+def parallelize_list(data_list: List, func):
+    num_cores = os.cpu_count() -1
+    if num_cores < 8:
+        num_cores = 1
+    if len(data_list) < num_cores:
+        num_cores = len(data_list)
+    data_split = np.array_split(data_list, num_cores)
+    pool = Pool(num_cores)
+    concat_list = np.concatenate(pool.map(func, data_split))
+    return concat_list
+
 
 if __name__ == '__main__':
     data = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -68,4 +82,3 @@ if __name__ == '__main__':
     print(rolling_window(data, 8))
     print(rolling_window(data, 9))
     print(rolling_window(data, 10))
-    

@@ -113,7 +113,8 @@ def get_train_step(role,
                    image_uri,
                    instance_type,
                    pipeline_session,
-                   inputs: Dict):
+                   inputs: Dict,
+                   epochs):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -124,6 +125,9 @@ def get_train_step(role,
         input_mode='File',
         source_dir='s3://sagemaker-autocryptotrading/code/code.tar.gz',
         entry_point='train.py',
+        hyperparameters={
+            'epochs': epochs
+        },
         sagemaker_session=pipeline_session
     )
     return TrainingStep(
@@ -187,6 +191,7 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
+        epochs=1000,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1):
     sagemaker_session = get_session(region, default_bucket)
@@ -202,7 +207,7 @@ def get_pipeline(
     step_preprocess = get_preprocessing_step(role,
                                              processing_image_uri,
                                              pipeline_session=pipeline_session,
-                                             instance_type="ml.m5.12xlarge"
+                                             instance_type="ml.m5.4xlarge"
                                              )
     training_inputs = {
         "crypto_data": TrainingInput(
@@ -215,7 +220,8 @@ def get_pipeline(
                                 training_image_uri,
                                 instance_type=train_instance_type,
                                 pipeline_session=pipeline_session,
-                                inputs=training_inputs
+                                inputs=training_inputs,
+                                epochs=str(epochs)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,
