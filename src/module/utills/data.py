@@ -14,7 +14,7 @@ def rolling_window(data: np.array, window):
     return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
 
 
-def prepare_batch(batch: List[Dict], frame_size: int) -> Dict[str, Tensor]:
+def prepare_batch(batch: List[Dict]) -> Dict[str, Tensor]:
     # x: (batch_size, frame_size, feature_size) 
     # y: (batch_size, frame_size)
     tensor_list_x = []
