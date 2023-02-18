@@ -39,7 +39,7 @@ def prepare_batch(batch: List[Dict]) -> Dict[str, Tensor]:
     }
 
 
-def parallelize_list(data_list: List, func):
+def parallelize_list_to_df(data_list: List, func):
     num_cores = os.cpu_count() -1
     if num_cores < 8:
         num_cores = 1
@@ -47,8 +47,8 @@ def parallelize_list(data_list: List, func):
         num_cores = len(data_list)
     data_split = np.array_split(data_list, num_cores)
     pool = Pool(num_cores)
-    concat_list = np.concatenate(pool.map(func, data_split))
-    return concat_list
+    df = pd.concat(pool.map(func, data_split))
+    return df
 
 
 if __name__ == '__main__':

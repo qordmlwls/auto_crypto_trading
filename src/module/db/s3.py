@@ -12,6 +12,9 @@ class S3:
         file_name: 업로드할 파일명
         """
         self.s3.Bucket(self.bucket_name).upload_file(file_name, key)
+    
+    def download_file(self, key, file_name):
+        self.s3.Bucket(self.bucket_name).download_file(key, file_name)
 
     def delete_file(self, key):
         self.s3.Object(self.bucket_name, key).delete()

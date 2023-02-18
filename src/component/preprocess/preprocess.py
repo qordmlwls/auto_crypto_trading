@@ -6,13 +6,17 @@ import numpy as np
 from tqdm import tqdm
 
 from src.component.binance.constraint import TIME_WINDOW
-from src.module.utills.data import parallelize_list
+from src.module.utills.data import parallelize_list_to_df
+
+from warnings import simplefilter
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 
 ORDER_BOOK_RANK_SIZE = 100
 
 
-def process_func(data_list: List) -> List[pd.DataFrame]:
+def process_func(data_list: np.ndarray) -> pd.DataFrame:
+    data_list = data_list.tolist()
     df_list = []
     for idx, data in tqdm(enumerate(data_list)):
         # 거래량 기준 정렬    
@@ -42,7 +46,8 @@ def process_func(data_list: List) -> List[pd.DataFrame]:
             
         # 현 시점 데이터
         df_list.append(price)
-        return df_list
+    df = pd.concat(df_list, axis=0)
+    return df
     
         
 def preprocess(data_list: List) -> pd.DataFrame:
@@ -78,7 +83,7 @@ def preprocess(data_list: List) -> pd.DataFrame:
     #     df_list.append(price)
     # df = pd.concat(df_list)
     # truncate df for time series
-    df = pd.concat(parallelize_list(data_list, process_func))
+    df = parallelize_list_to_df(data_list, process_func)
     df.sort_values(by='datetime', inplace=True)
     df.reset_index(drop=True, inplace=True)
     df.drop('datetime', axis=1, inplace=True)
