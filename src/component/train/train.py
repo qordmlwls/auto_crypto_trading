@@ -34,25 +34,27 @@ class GrudModel(LightningModule):
         self.learning_rate = args['learning_rate']
         self.sequence_length = args['frame_size']
         self.drop_out = args['drop_out']
+        self.device = args['device']
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
-                          dropout=self.drop_out ,batch_first=True)
+                          dropout=self.drop_out, batch_first=True)
         self.layer_norm = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
         self.criterion = nn.MSELoss()
 
     def forward(self, x):
         # input x: (batch, seq_len, input_size)
-        # h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
-        # out, _ = self.gru(x, h0)  # out: tensor of shape (batch_size, seq_length, hidden_size)
-        out, _ = self.gru(x.float())  # out: tensor of shape (batch_size, seq_length, hidden_size)
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
+        out, _ = self.gru(x.float(), h0)  # out: tensor of shape (batch_size, seq_length, hidden_size)
+        
+        # out, _ = self.gru(x.float())  # out: tensor of shape (batch_size, seq_length, hidden_size)
         maximum = out.max()
         if maximum == np.Inf or maximum == np.NINF:
             raise ValueError('ValueError: inf or -inf')
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
-        out = F.relu(out)
-        out = F.relu(self.layer_norm(out))
+        # out = F.relu(out)
+        # out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
 
@@ -117,6 +119,7 @@ class GruTrainer:
         self.train_dataloader = None
         self.val_dataloader = None
         self.device = get_gpu_device()
+        self.args.update({'device': self.device})
         
     def _prepare_batch_wrapper(self, batch: List[Dict]) -> Dict[str, torch.Tensor]:
         return prepare_batch(batch)
