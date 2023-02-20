@@ -71,9 +71,9 @@ class GrudModel(LightningModule):
         # out = self.drop_out_layer(self.activation_fn(out))
         # out = self.drop_out_layer(self.activation_fn(self.intermediate(out)))
         # out = self.drop_out_layer(self.activation_fn(self.intermediate2(out)))
-        out = self.drop_out_layer(self.activation_fn(self.layer_norm1(out)))
-        out = self.drop_out_layer(self.activation_fn(self.layer_norm2(self.intermediate(out))))
-        out = self.drop_out_layer(self.activation_fn(self.layer_norm3(self.intermediate2(out))))
+        # out = self.drop_out_layer(self.activation_fn(self.layer_norm1(out)))
+        # out = self.drop_out_layer(self.activation_fn(self.layer_norm2(self.intermediate(out))))
+        # out = self.drop_out_layer(self.activation_fn(self.layer_norm3(self.intermediate2(out))))
         # out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
