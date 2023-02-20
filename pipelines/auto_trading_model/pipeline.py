@@ -194,7 +194,7 @@ def get_pipeline(
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
         epochs=2000,
-        column_limit=5,
+        column_limit=50,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1):
     sagemaker_session = get_session(region, default_bucket)

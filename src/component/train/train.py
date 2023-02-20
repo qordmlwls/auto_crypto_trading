@@ -151,7 +151,10 @@ class GruTrainer:
             
         for j in range(self.args['frame_size'], len(train) - self.args['frame_size']):
             _y = test[j: j + self.args['frame_size']]
-            data_y.append(_y)
+            # volatilty
+            volatility = _y - test[j-1: j]['close'].values[0]
+            # data_y.append(_y)
+            data_y.append(volatility)
             
         return data_x, data_y
         
@@ -165,10 +168,8 @@ class GruTrainer:
         y = df[['close']].copy()
         scaler_x = MinMaxScaler()
         scaler_y = MinMaxScaler()
-        # scaled_x = scaler_x.fit_transform(x)
-        # scaled_y = scaler_y.fit_transform(y)
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
-        # train, val = train_test_split(df, test_size=self.args['test_ratio'], shuffle=False)
+
         # trainset만 스케일링
         scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
         scaled_train_y = pd.DataFrame(scaler_y.fit_transform(train_y), columns=train_y.columns)

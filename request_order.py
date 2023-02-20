@@ -53,8 +53,12 @@ def main():
         # next 30분 각각의 예측값을 받아온다. 길이 30
         res_data = json.loads(res['Body'].read().decode('utf-8'))['prediction']
         # res_data = [24000 for _ in range(30)]
-    
+        
+        
     current_price = data_list[-1]['close']
+    # scale이 안 맞으므로 맞춰줌
+    diff = current_price - res_data[0]
+    res_data = [price + diff for price in res_data]
     # 레버리지에 따를 최대 매수 가능 수량
     max_amount = round(binance.get_amout(position['total'], current_price, 0.5), 3) * LEVERAGE
     
