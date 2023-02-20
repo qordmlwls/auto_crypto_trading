@@ -37,7 +37,7 @@ def input_fn(request_body, request_content_type):
     columns = ['open', 'high', 'low', 'close', 'volume'] + [f'bid_{i}' for i in range(model_config['column_limit'])] \
                 + [f'ask_{i}' for i in range(model_config['column_limit'])] + [f'bid_volume_{i}' for i in range(model_config['column_limit'])] \
                 + [f'ask_volume_{i}' for i in range(model_config['column_limit'])]
-    df = pd.DataFrame(data_list)
+    df = pd.DataFrame(data_list)[columns]
     scaled_x = pd.DataFrame(scaler_x.transform(df), columns=df.columns)
     
     idx_array = np.array([i for i in range(len(df))])

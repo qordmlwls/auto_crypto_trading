@@ -114,7 +114,8 @@ def get_train_step(role,
                    instance_type,
                    pipeline_session,
                    inputs: Dict,
-                   epochs):
+                   epochs,
+                   column_limit):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -126,7 +127,8 @@ def get_train_step(role,
         source_dir='s3://sagemaker-autocryptotrading/code/code.tar.gz',
         entry_point='train.py',
         hyperparameters={
-            'epochs': epochs
+            'epochs': epochs,
+            'column_limit': column_limit,
         },
         sagemaker_session=pipeline_session
     )
@@ -191,7 +193,8 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
-        epochs=1000,
+        epochs=2000,
+        column_limit=5,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1):
     sagemaker_session = get_session(region, default_bucket)
@@ -221,7 +224,8 @@ def get_pipeline(
                                 instance_type=train_instance_type,
                                 pipeline_session=pipeline_session,
                                 inputs=training_inputs,
-                                epochs=str(epochs)
+                                epochs=str(epochs),
+                                column_limit=str(column_limit)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,
