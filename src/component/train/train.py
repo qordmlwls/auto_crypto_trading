@@ -119,7 +119,7 @@ class GruTrainer:
         self.train_dataloader = None
         self.val_dataloader = None
         self.device = get_gpu_device()
-        self.args.update({'device': self.device})
+        # self.args.update({'device': self.device})
         
     def _prepare_batch_wrapper(self, batch: List[Dict]) -> Dict[str, torch.Tensor]:
         return prepare_batch(batch)
@@ -185,6 +185,7 @@ class GruTrainer:
         # save scaler
         joblib.dump(scaler_x, os.path.join(self.args['model_dir'], 'scaler_x.pkl'))
         joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
+        self.args.update({'device': self.device})
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
         
