@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_ratio', type=float, default=0.2, help='test ratio')
     parser.add_argument('--fp16', type=bool, default=True, help='fp16 mode')
     parser.add_argument('--patience', type=int, default=1000, help='patience for early stopping')
+    parser.add_argument('--column_limit', type=int, default=5, help='column limit for bid and ask')
     parameters = parser.parse_args()
     model_config = parameters.__dict__
     

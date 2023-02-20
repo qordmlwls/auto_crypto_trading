@@ -4,7 +4,7 @@ from torch import Tensor
 from pandas import DataFrame
 from typing import NoReturn, Dict, List, Tuple
 
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import joblib
@@ -47,7 +47,7 @@ class GrudModel(LightningModule):
         self.layer_norm3 = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
         nn.init.kaiming_normal_(self.fc.weight, nonlinearity='relu')
-        self.drop_out = nn.Dropout(self.drop_out)
+        self.drop_out_layer = nn.Dropout(self.drop_out)
         self.criterion = nn.MSELoss()
         self.activation_fn = nn.ReLU()
 
@@ -64,12 +64,12 @@ class GrudModel(LightningModule):
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
         # out = F.relu(out)
-        out = self.drop_out(self.activation_fn(out))
-        out = self.drop_out(self.activation_fn(self.intermediate(out)))
-        out = self.drop_out(self.activation_fn(self.intermediate2(out)))
-        # out = self.drop_out(self.activation_fn(self.layer_norm1(out)))
-        # out = self.drop_out(self.activation_fn(self.layer_norm2(self.intermediate(out))))
-        # out = self.drop_out(self.activation_fn(self.layer_norm3(self.intermediate2(out))))
+        # out = self.drop_out_layer(self.activation_fn(out))
+        # out = self.drop_out_layer(self.activation_fn(self.intermediate(out)))
+        # out = self.drop_out_layer(self.activation_fn(self.intermediate2(out)))
+        out = self.drop_out_layer(self.activation_fn(self.layer_norm1(out)))
+        out = self.drop_out_layer(self.activation_fn(self.layer_norm2(self.intermediate(out))))
+        out = self.drop_out_layer(self.activation_fn(self.layer_norm3(self.intermediate2(out))))
         # out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
@@ -157,7 +157,11 @@ class GruTrainer:
         
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
         
-        x = df
+        columns = ['open', 'high', 'low', 'close', 'volume'] + [f'bid_{i}' for i in range(self.args['column_limit'])] \
+                    + [f'ask_{i}' for i in range(self.args['column_limit'])] + [f'bid_volume_{i}' for i in range(self.args['column_limit'])] \
+                    + [f'ask_volume_{i}' for i in range(self.args['column_limit'])]
+        # x = df
+        x = df[columns].copy()
         y = df[['close']].copy()
         scaler_x = MinMaxScaler()
         scaler_y = MinMaxScaler()
@@ -226,9 +230,10 @@ class GruTrainer:
             verbose=False,
             mode='min'
         )
+        learning_rate_monitor = LearningRateMonitor(logging_interval='step')
         if pl.__version__ == '1.7.6':
             trainer = Trainer(
-                callbacks=[checkpoint_callback, early_stop_callback],
+                callbacks=[checkpoint_callback, early_stop_callback, learning_rate_monitor],
                 max_epochs=self.args['epochs'],
                 fast_dev_run=self.args['test_mode'],
                 num_sanity_val_steps=None if self.args['test_mode'] else 0,
@@ -242,7 +247,7 @@ class GruTrainer:
             )
         elif pl.__version__ == '1.4.9':
             trainer = Trainer(
-                callbacks=[checkpoint_callback, early_stop_callback],
+                callbacks=[checkpoint_callback, early_stop_callback, learning_rate_monitor],
                 max_epochs=self.args['epochs'],
                 fast_dev_run=self.args['test_mode'],
                 num_sanity_val_steps=None if self.args['test_mode'] else 0,
