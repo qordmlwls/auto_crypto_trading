@@ -57,8 +57,8 @@ def main():
         
     current_price = data_list[-1]['close']
     # scale이 안 맞으므로 맞춰줌
-    diff = current_price - res_data[0]
-    res_data = [price + diff for price in res_data]
+    # diff = current_price - res_data[0]
+    # res_data = [price + diff for price in res_data]
     # 레버리지에 따를 최대 매수 가능 수량
     max_amount = round(binance.get_amout(position['total'], current_price, 0.5), 3) * LEVERAGE
     
@@ -82,7 +82,10 @@ def main():
     abs_amt = abs(position['amount'])
 
     if res_data:
-        futre_change = chek_futre_price(current_price, res_data)
+        # futre_change = chek_futre_price(current_price, res_data)
+        # volatility
+        max_index = np.argmax([abs(change) for change in res_data])
+        futre_change = {'max_chage': res_data[max_index], 'max_index': max_index}
     else:
         pass
     

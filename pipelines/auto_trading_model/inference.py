@@ -45,11 +45,11 @@ def input_fn(request_body, request_content_type):
     
     embedding = torch.tensor(scaled_x.values).to(device)
     time_embedding = embedding[rolling_tensor.long()]
-    # return {'input_data': time_embedding}
-    # volatilty
-    y = df['close'].copy()
-    scaled_y = float(scaler_y.transform(y)[-1])
-    return {'input_data': time_embedding, 'target': scaled_y}
+    return {'input_data': time_embedding}
+    # # volatilty
+    # y = df['close'].copy()
+    # scaled_y = float(y[-1:]['close'].values[0])
+    # return {'input_data': time_embedding, 'target': scaled_y}
 
 
 def model_fn(model_dir):
@@ -80,8 +80,7 @@ def predict_fn(input_data, model):
         output = model(input_data['input_data'])
         # out = scaler_y.inverse_transform(output.cpu().detach().numpy())
         # volatilty
-        out = output.cpu().detach().numpy() - input_data['target']
-        out = scaler_y.inverse_transform(out)
+        out = output.cpu().detach().numpy()
         logger.info('Predition done')
     else:
         raise Exception('Input data is not tensor')

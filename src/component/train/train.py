@@ -152,7 +152,7 @@ class GruTrainer:
         for j in range(self.args['frame_size'], len(train) - self.args['frame_size']):
             _y = test[j: j + self.args['frame_size']]
             # volatilty
-            volatility = _y - test[j-1: j]['close'].values[0]
+            volatility = (_y - test[j-1: j]['close'].values[0]) / test[j-1: j]['close'].values[0]
             # data_y.append(_y)
             data_y.append(volatility)
             
@@ -171,11 +171,18 @@ class GruTrainer:
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
 
         # trainset만 스케일링
+        # scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
+        # scaled_train_y = pd.DataFrame(scaler_y.fit_transform(train_y), columns=train_y.columns)
+        
+        # scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
+        # scaled_val_y = pd.DataFrame(scaler_y.transform(val_y), columns=val_y.columns)
+        
+        # volatilty
         scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
-        scaled_train_y = pd.DataFrame(scaler_y.fit_transform(train_y), columns=train_y.columns)
+        scaled_train_y = train_y
         
         scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
-        scaled_val_y = pd.DataFrame(scaler_y.transform(val_y), columns=val_y.columns)
+        scaled_val_y = val_y
         
         train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
         val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
