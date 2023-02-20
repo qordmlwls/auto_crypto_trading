@@ -85,7 +85,7 @@ def main():
         # futre_change = chek_futre_price(current_price, res_data)
         # volatility
         max_index = np.argmax([abs(change) for change in res_data])
-        futre_change = {'max_chage': res_data[max_index], 'max_index': max_index}
+        futre_change = {'max_chage': res_data[max_index] * 100, 'max_index': max_index}
     else:
         pass
     
