@@ -38,11 +38,12 @@ class GrudModel(LightningModule):
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
                           dropout=self.drop_out, batch_first=True)
-        self.layer_norm = nn.LayerNorm(self.hidden_size * self.sequence_length,)
+        self.layer_norm1 = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.intermediate = nn.Linear(self.hidden_size * self.sequence_length, self.hidden_size * self.sequence_length)
-        nn.init.he_normal_(self.intermediate.weight)
+        nn.init.kaiming_normal_(self.intermediate.weight, nonlinearity='relu')
+        self.layer_norm2 = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
-        nn.init.he_normal_(self.fc.weight)
+        nn.init.kaiming_normal_(self.fc.weight, nonlinearity='relu')
         self.drop_out = nn.Dropout(self.drop_out)
         self.criterion = nn.MSELoss()
         self.activation_fn = nn.ReLU()
@@ -60,8 +61,8 @@ class GrudModel(LightningModule):
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
         # out = F.relu(out)
-        out = self.drop_out(self.activation_fn(out))
-        out = self.drop_out(self.activation_fn(self.intermediate(out)))
+        out = self.drop_out(self.activation_fn(self.layer_norm1(out)))
+        out = self.drop_out(self.activation_fn(self.layer_norm2(self.intermediate(out))))
         # out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
