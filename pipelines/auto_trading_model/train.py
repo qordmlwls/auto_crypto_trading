@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--frame_size', type=int, default=TIME_WINDOW, help='input size of sequence length')
     parser.add_argument('--batch_size', type=int, default=150, help='batch size')
     parser.add_argument('--hidden_size', type=int, default=128, help='hidden size of gru')
-    parser.add_argument('--num_layers', type=int, default=2, help='number of gru layers')
+    parser.add_argument('--num_layers', type=int, default=3, help='number of gru layers')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='learning rate')
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('--drop_out', type=float, default=0.2, help='drop out rate')

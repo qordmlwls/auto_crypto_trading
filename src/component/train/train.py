@@ -40,6 +40,7 @@ class GrudModel(LightningModule):
                           dropout=self.drop_out, batch_first=True)
         self.layer_norm = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
+        self.drop_out = nn.Dropout(self.drop_out)
         self.criterion = nn.MSELoss()
 
     def forward(self, x):
@@ -55,6 +56,7 @@ class GrudModel(LightningModule):
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
         # out = F.relu(out)
+        out = self.drop_out(F.relu(out))
         # out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
