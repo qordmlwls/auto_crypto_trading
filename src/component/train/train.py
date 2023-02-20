@@ -34,7 +34,7 @@ class GrudModel(LightningModule):
         self.learning_rate = args['learning_rate']
         self.sequence_length = args['frame_size']
         self.drop_out = args['drop_out']
-        self.device = args['device']
+        # self.device = args['device']
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
                           dropout=self.drop_out, batch_first=True)
@@ -44,7 +44,8 @@ class GrudModel(LightningModule):
 
     def forward(self, x):
         # input x: (batch, seq_len, input_size)
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(self.device)
+        device = x.device
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
         out, _ = self.gru(x.float(), h0)  # out: tensor of shape (batch_size, seq_length, hidden_size)
         
         # out, _ = self.gru(x.float())  # out: tensor of shape (batch_size, seq_length, hidden_size)
@@ -185,7 +186,7 @@ class GruTrainer:
         # save scaler
         joblib.dump(scaler_x, os.path.join(self.args['model_dir'], 'scaler_x.pkl'))
         joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
-        self.args.update({'device': self.device})
+        # self.args.update({'device': self.device})
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
         
