@@ -134,17 +134,17 @@ def main():
         if amount < minimun_amount:
             amount = minimun_amount
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
-        if leverage_revenu_rate > 0.5:
+        if leverage_revenu_rate > 0.2:
             if position['amount'] > 0:
                 # 5% 매도
                 print('------------------------------------------------------')
-                print('이익 0.5% 이상이므로 5% 매도')
+                print('이익 0.2% 이상이므로 5% 매도')
                 binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
                 position['amount'] = position['amount'] - amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position['amount'] < 0:
                 print('------------------------------------------------------')
-                print('이익 0.5% 이상이므로 5% 매수')
+                print('이익 0.2% 이상이므로 5% 매수')
                 binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
                 position['amount'] = position['amount'] + amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
