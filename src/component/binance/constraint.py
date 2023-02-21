@@ -23,4 +23,4 @@ STOP_LOSS_RATE = 0.5
 DANGER_RATE = -5.0
 
 # 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
-FUTURE_PRICE_RATE = 0.025
+FUTURE_PRICE_RATE = 0.021

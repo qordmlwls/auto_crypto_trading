@@ -86,9 +86,11 @@ def main():
         # volatility
         max_index = np.argmax([abs(change) for change in res_data])
         futre_change = {'max_chage': res_data[max_index] * 100, 'max_index': max_index}
+        print("------------------------------------------------------")
+        print("future price change", futre_change['max_chage'], "%")
     else:
         pass
-    
+        
     #0이면 포지션 잡기전
     if abs_amt == 0 and res_data:
         
@@ -141,13 +143,15 @@ def main():
                 # 5% 매도
                 print('------------------------------------------------------')
                 print('이익 0.2% 이상이므로 5% 매도')
-                binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
+                binance.create_market_order(TARGET_COIN_TICKER, 'sell', first_amount)
+                # binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
                 position['amount'] = position['amount'] - amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position['amount'] < 0:
                 print('------------------------------------------------------')
                 print('이익 0.2% 이상이므로 5% 매수')
-                binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
+                # binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
+                binance.create_market_order(TARGET_COIN_TICKER, 'buy', first_amount)
                 position['amount'] = position['amount'] + amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
@@ -166,7 +170,7 @@ def main():
                 print("------------------------------------------------------")
                 print("Buy", amount, TARGET_COIN_TICKER)
                 # binance.create_order(TARGET_COIN_TICKER, 'buy', amount + abs_amt, current_price)
-                binance.create_market_order(TARGET_COIN_TICKER, 'buy', first_amount)
+                binance.create_market_order(TARGET_COIN_TICKER, 'buy', amount + abs_amt)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
@@ -208,7 +212,7 @@ def main():
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
                 # binance.create_order(TARGET_COIN_TICKER, 'sell', amount + abs_amt, current_price)
-                binance.create_market_order(TARGET_COIN_TICKER, 'sell', first_amount)
+                binance.create_market_order(TARGET_COIN_TICKER, 'sell', amount + abs_amt)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
