@@ -97,14 +97,16 @@ def main():
             print("Buy", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
             #매수 주문을 넣는다.
-            binance.create_order(TARGET_COIN_TICKER, 'buy', first_amount, current_price)
+            # binance.create_order(TARGET_COIN_TICKER, 'buy', first_amount, current_price)
+            binance.create_market_order(TARGET_COIN_TICKER, 'buy', first_amount)
             binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
         elif futre_change['max_chage'] < -FUTURE_PRICE_RATE:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
             #매도 주문을 넣는다.
-            binance.create_order(TARGET_COIN_TICKER, 'sell', first_amount, current_price)
+            # binance.create_order(TARGET_COIN_TICKER, 'sell', first_amount, current_price)
+            binance.create_market_order(TARGET_COIN_TICKER, 'sell', first_amount)
             binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
         
@@ -155,14 +157,16 @@ def main():
                 # 5% 추가 매도
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
+                # binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
+                binance.create_market_order(TARGET_COIN_TICKER, 'sell', first_amount)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 print("------------------------------------------------------")
             elif futre_change['max_chage'] > FUTURE_PRICE_RATE:
                 # 포지션 종료, 5% 추가 매수
                 print("------------------------------------------------------")
                 print("Buy", amount, TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, 'buy', amount + abs_amt, current_price)
+                # binance.create_order(TARGET_COIN_TICKER, 'buy', amount + abs_amt, current_price)
+                binance.create_market_order(TARGET_COIN_TICKER, 'buy', first_amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
@@ -195,14 +199,16 @@ def main():
                 # 5% 추가 매수
                 print("------------------------------------------------------")
                 print("Buy", amount, TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
+                # binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
+                binance.create_market_order(TARGET_COIN_TICKER, 'buy', first_amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif futre_change['max_chage'] < -FUTURE_PRICE_RATE:
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, 'sell', amount + abs_amt, current_price)
+                # binance.create_order(TARGET_COIN_TICKER, 'sell', amount + abs_amt, current_price)
+                binance.create_market_order(TARGET_COIN_TICKER, 'sell', first_amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
