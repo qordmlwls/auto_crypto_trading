@@ -136,24 +136,27 @@ def main():
         # @TODO: 이미 잡은 포지션에 따른 매수매도 로직
         #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
         amount = one_percent_amount * 5.0
+        profit_amount = one_percent_amount * 5.0 * PROFIT_AMOUNT_MULTIPLIER
         if amount < minimun_amount:
             amount = minimun_amount
+        if profit_amount < minimun_amount:
+            profit_amount = minimun_amount
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
         if leverage_revenu_rate > STOP_PROFIT_RATE:
             if position['amount'] > 0:
                 # 5% 매도
                 print('------------------------------------------------------')
                 print(f'이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도')
-                binance.create_market_order(TARGET_COIN_TICKER, 'sell', amount * PROFIT_AMOUNT_MULTIPLIER)
+                binance.create_market_order(TARGET_COIN_TICKER, 'sell', profit_amount)
                 # binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
-                position['amount'] = position['amount'] - amount
+                position['amount'] = position['amount'] - profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position['amount'] < 0:
                 print('------------------------------------------------------')
                 print(f'이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수')
                 # binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
-                binance.create_market_order(TARGET_COIN_TICKER, 'buy', amount * PROFIT_AMOUNT_MULTIPLIER)
-                position['amount'] = position['amount'] + amount
+                binance.create_market_order(TARGET_COIN_TICKER, 'buy', profit_amount)
+                position['amount'] = position['amount'] + profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
         # 숏 포지션일 경우
