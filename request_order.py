@@ -9,7 +9,8 @@ import time
 from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
-    LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, FUTURE_PRICE_RATE
+    LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
+    STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -102,7 +103,7 @@ def main():
             # binance.create_order(TARGET_COIN_TICKER, 'buy', first_amount, current_price)
             binance.create_market_order(TARGET_COIN_TICKER, 'buy', first_amount)
             binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-        elif futre_change['max_chage'] < -FUTURE_PRICE_RATE:
+        elif futre_change['max_chage'] < MINUS_FUTURE_PRICE_RATE:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
@@ -138,26 +139,26 @@ def main():
         if amount < minimun_amount:
             amount = minimun_amount
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
-        if leverage_revenu_rate > 0.2:
+        if leverage_revenu_rate > STOP_PROFIT_RATE:
             if position['amount'] > 0:
                 # 5% 매도
                 print('------------------------------------------------------')
-                print('이익 0.2% 이상이므로 10% 매도')
-                binance.create_market_order(TARGET_COIN_TICKER, 'sell', amount * 2)
+                print(f'이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도')
+                binance.create_market_order(TARGET_COIN_TICKER, 'sell', amount * PROFIT_AMOUNT_MULTIPLIER)
                 # binance.create_order(TARGET_COIN_TICKER, 'sell', amount, current_price)
                 position['amount'] = position['amount'] - amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position['amount'] < 0:
                 print('------------------------------------------------------')
-                print('이익 0.2% 이상이므로 10% 매수')
+                print(f'이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수')
                 # binance.create_order(TARGET_COIN_TICKER, 'buy', amount, current_price)
-                binance.create_market_order(TARGET_COIN_TICKER, 'buy', amount * 2)
+                binance.create_market_order(TARGET_COIN_TICKER, 'buy', amount * PROFIT_AMOUNT_MULTIPLIER)
                 position['amount'] = position['amount'] + amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
         # 숏 포지션일 경우
         if position['amount'] < 0 and res_data:
-            if futre_change['max_chage'] < -FUTURE_PRICE_RATE:
+            if futre_change['max_chage'] < MINUS_FUTURE_PRICE_RATE:
                 # 5% 추가 매도
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
@@ -207,7 +208,7 @@ def main():
                 binance.create_market_order(TARGET_COIN_TICKER, 'buy', amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-            elif futre_change['max_chage'] < -FUTURE_PRICE_RATE:
+            elif futre_change['max_chage'] < MINUS_FUTURE_PRICE_RATE:
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
