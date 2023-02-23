@@ -115,7 +115,8 @@ def get_train_step(role,
                    pipeline_session,
                    inputs: Dict,
                    epochs,
-                   column_limit):
+                   column_limit,
+                   activation_function):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -129,6 +130,7 @@ def get_train_step(role,
         hyperparameters={
             'epochs': epochs,
             'column_limit': column_limit,
+            'activation_function': activation_function,
         },
         sagemaker_session=pipeline_session
     )
@@ -182,6 +184,7 @@ def get_deploy_processing_step(role,
             "--endpoint_instance_type", endpoint_instance_type,
             "--endpoint_instance_count", endpoint_instance_count,
             "--endpoint_name", "Autotrading-Endpoint"
+            # "--endpoint_name", "Test"
         ],
         code="s3://sagemaker-autocryptotrading/deploy_code/deploy_model.py"
     )
@@ -196,7 +199,25 @@ def get_pipeline(
         epochs=2000,
         column_limit=50,
         endpoint_instance_type="ml.t2.medium",
-        endpoint_instance_count=1):
+        endpoint_instance_count=1,
+        activation_function="none"):
+    """_summary_
+
+    Args:
+        region (_type_): _description_
+        role (_type_, optional): _description_. Defaults to None.
+        default_bucket (_type_, optional): _description_. Defaults to None.
+        pipeline_name (str, optional): _description_. Defaults to "AutotradingTrainPipeline".
+        train_instance_type (str, optional): _description_. Defaults to 'ml.g4dn.8xlarge'.
+        epochs (int, optional): _description_. Defaults to 2000.
+        column_limit (int, optional): _description_. Defaults to 50.
+        endpoint_instance_type (str, optional): _description_. Defaults to "ml.t2.medium".
+        endpoint_instance_count (int, optional): _description_. Defaults to 1.
+        activation_function (str, optional): _description_. Defaults to "none". or "tanh" or "relu"
+
+    Returns:
+        _type_: _description_
+    """
     sagemaker_session = get_session(region, default_bucket)
     if role is None:
         role = sagemaker.session.get_execution_role(sagemaker_session)
@@ -225,7 +246,8 @@ def get_pipeline(
                                 pipeline_session=pipeline_session,
                                 inputs=training_inputs,
                                 epochs=str(epochs),
-                                column_limit=str(column_limit)
+                                column_limit=str(column_limit),
+                                activation_function=activation_function
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,

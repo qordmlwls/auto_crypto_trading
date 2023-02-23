@@ -34,6 +34,7 @@ class GrudModel(LightningModule):
         self.learning_rate = args['learning_rate']
         self.sequence_length = args['frame_size']
         self.drop_out = args['drop_out']
+        self.activation_function = args['activation_function']
         # self.device = args['device']
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
@@ -41,19 +42,38 @@ class GrudModel(LightningModule):
         self.layer_norm1 = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.intermediate = nn.Linear(self.hidden_size * self.sequence_length, self.hidden_size * self.sequence_length)
         # nn.init.kaiming_normal_(self.intermediate.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.intermediate.weight, nonlinearity='leaky_relu')
+        # nn.init.kaiming_normal_(self.intermediate.weight, nonlinearity='leaky_relu')
+        self.weight_initialization(self.intermediate, self.activation_function )
         self.layer_norm2 = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.intermediate2 = nn.Linear(self.hidden_size * self.sequence_length, self.hidden_size * self.sequence_length)
         # nn.init.kaiming_normal_(self.intermediate2.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.intermediate2.weight, nonlinearity='leaky_relu')
+        # nn.init.kaiming_normal_(self.intermediate2.weight, nonlinearity='leaky_relu')
+        self.weight_initialization(self.intermediate2, self.activation_function)
         self.layer_norm3 = nn.LayerNorm(self.hidden_size * self.sequence_length,)
         self.fc = nn.Linear(self.hidden_size * self.sequence_length, self.output_size)
         # nn.init.kaiming_normal_(self.fc.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.fc.weight, nonlinearity='leaky_relu')
+        # nn.init.kaiming_normal_(self.fc.weight, nonlinearity='leaky_relu')
+        self.weight_initialization(self.fc, self.activation_function)
         self.drop_out_layer = nn.Dropout(self.drop_out)
         self.criterion = nn.MSELoss()
         # self.activation_fn = nn.ReLU()
-        self.activation_fn = nn.LeakyReLU()
+        self.activation_fn = self.activation(self.activation_function)
+        
+    def activation(self, activation_function):
+        if activation_function == 'leaky_relu':
+            return nn.LeakyReLU()
+        elif activation_function == 'tanh':
+            return nn.Tanh()
+        else:
+            return nn.ReLU()
+        
+    def weight_initialization(self, layer, activation_function):
+        if activation_function == 'leaky_relu':
+            nn.init.kaiming_normal_(layer.weight, nonlinearity='leaky_relu')
+        elif activation_function == 'tanh':
+            nn.init.xavier_normal_(layer.weight, gain=nn.init.calculate_gain('tanh'))
+        else:
+            nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
         
     def forward(self, x):
         # input x: (batch, seq_len, input_size)
@@ -67,6 +87,10 @@ class GrudModel(LightningModule):
             raise ValueError('ValueError: inf or -inf')
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
+        if self.activation_function == 'tanh':
+            out = self.activation_fn(out)
+        else:
+            pass
         # out = F.relu(out)
         # out = self.drop_out_layer(self.activation_fn(out))
         # out = self.drop_out_layer(self.activation_fn(self.intermediate(out)))
