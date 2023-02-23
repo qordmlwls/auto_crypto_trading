@@ -140,7 +140,7 @@ def main():
         if amount < minimun_amount:
             amount = minimun_amount
         if profit_amount < minimun_amount:
-            profit_amount = minimun_amount
+            profit_amount = minimun_amount * PROFIT_AMOUNT_MULTIPLIER
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
         if leverage_revenu_rate > STOP_PROFIT_RATE:
             if position['amount'] > 0:

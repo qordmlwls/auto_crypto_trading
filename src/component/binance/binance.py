@@ -117,6 +117,13 @@ class Binance:
             self.binance.cancel_all_orders(ticker)
         except Exception as e:
             print('---', e)
+    
+    def cancel_order(self, ticker, order_id):
+        time.sleep(0.1)
+        try:
+            self.binance.cancel_order(order_id, ticker)
+        except Exception as e:
+            print('---', e)
 
     #스탑로스를 걸어놓는다. 해당 가격에 해당되면 바로 손절한다. 첫번째: 바이낸스 객체, 두번째: 코인 티커, 세번째: 손절 수익율 (1.0:마이너스100% 청산, 0.9:마이너스 90%, 0.5: 마이너스 50%)
     #네번째 웹훅 알림에서 사용할때는 마지막 파라미터를 False로 넘겨서 사용한다. 트레이딩뷰 웹훅 강의 참조..
@@ -135,14 +142,17 @@ class Binance:
                 # print(order)
                 stop_loss_ok = True
                 break
-        
-        # 스탑로스가 없으면 스탑로스를 건다.
-        if not stop_loss_ok:
+        target_symbol = ticker.replace("/", "")
+        position = self.position_check(target_symbol)
+        # 스탑로스가 없거나 반대로 걸려있으면 스탑로스를 건다.
+        if not stop_loss_ok or (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) or (stop_loss_ok and order['side'] == 'sell' and position['amount'] < 0):
             
             if rest:
                 time.sleep(10.0)
             target_symbol = ticker.replace("/", "")
             position = self.position_check(target_symbol)
+            if (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) or (stop_loss_ok and order['side'] == 'sell' and position['amount'] < 0):
+                self.binance.cancel_order(order['id'], ticker)
             #롱일땐 숏을 잡아야 되고
             side = "sell"
             #숏일땐 롱을 잡아야 한다.
