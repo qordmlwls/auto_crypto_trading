@@ -143,6 +143,8 @@ def main():
             profit_amount = minimun_amount * PROFIT_AMOUNT_MULTIPLIER
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
         if leverage_revenu_rate > STOP_PROFIT_RATE:
+            if abs(position['amount']) < profit_amount:
+                profit_amount = abs(position['amount'])
             if position['amount'] > 0:
                 # 5% 매도
                 print('------------------------------------------------------')
