@@ -72,8 +72,11 @@ class GrudModel(LightningModule):
             nn.init.kaiming_normal_(layer.weight, nonlinearity='leaky_relu')
         elif activation_function == 'tanh':
             nn.init.xavier_normal_(layer.weight, gain=nn.init.calculate_gain('tanh'))
-        else:
+        elif activation_function == 'relu':
             nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
+        else:
+            nn.init.xavier_normal_(layer.weight)
+            
         
     def forward(self, x):
         # input x: (batch, seq_len, input_size)
