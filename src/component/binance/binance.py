@@ -178,6 +178,10 @@ class Binance:
             print(self.binance.create_order(ticker, 'STOP_MARKET', side, abs(position['amount']), stop_price, params))
             
             print("####STOPLOSS SETTING DONE ######################")
+        # 포지션 없다면 스탑로스를 취소한다.
+        elif stop_loss_ok and position['amount'] == 0:
+            self.binance.cancel_order(order['id'], ticker)
+            print("####STOPLOSS CANCEL DONE ######################")
             
             
     # def set_stop_loss_price(self, ticker, stop_price, rest=True):

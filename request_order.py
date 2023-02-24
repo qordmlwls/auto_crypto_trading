@@ -10,7 +10,7 @@ from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
-    STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER
+    STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -142,7 +142,8 @@ def main():
         if profit_amount < minimun_amount:
             profit_amount = minimun_amount * PROFIT_AMOUNT_MULTIPLIER
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
-        if leverage_revenu_rate > STOP_PROFIT_RATE:
+        # if leverage_revenu_rate > STOP_PROFIT_RATE:
+        if revenue_rate > STOP_REVENUE_PROFIT_RATE:
             if abs(position['amount']) < profit_amount:
                 profit_amount = abs(position['amount'])
             if position['amount'] > 0:
