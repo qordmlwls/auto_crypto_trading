@@ -10,7 +10,7 @@ TARGET_COIN_SYMBOL = 'BTCUSDT'
 
 TIME_WINDOW = 15
 
-LEVERAGE = 10
+LEVERAGE = 5
 #아래는 타겟 수익율로 마음껏 조절하세요
 #타겟 레이트 0.001 
 TARGET_RATE = 0.001
