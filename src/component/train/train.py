@@ -75,7 +75,8 @@ class GrudModel(LightningModule):
         elif activation_function == 'relu':
             nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
         else:
-            nn.init.xavier_normal_(layer.weight)
+            # nn.init.xavier_normal_(layer.weight)
+            return
             
         
     def forward(self, x):
