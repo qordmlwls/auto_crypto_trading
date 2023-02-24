@@ -10,7 +10,7 @@ from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
-    STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE
+    STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -61,6 +61,16 @@ def main():
     # diff = current_price - res_data[0]
     # res_data = [price + diff for price in res_data]
     # 레버리지에 따를 최대 매수 가능 수량
+    
+    # 예측값과 현재값의 scale을 맞춰준다.
+    # current_diff = [abs(current_price - data_list[i]['close']) / current_price * 100 for i in range(0, len(data_list) - 1)]
+    # variance = np.mean(current_diff)
+    variance = CURRENT_VARIANCE
+    future_diff = [abs(res_data[i]) * 100 for i in range(0, len(res_data))]
+    future_variance = np.mean(future_diff)
+    # scaling
+    res_data = [res_data[i] * (1 + variance / future_variance) for i in range(0, len(res_data))]
+    
     max_amount = round(binance.get_amout(position['total'], current_price, 0.5), 3) * LEVERAGE
     
     one_percent_amount = round(max_amount * 0.01, 3)
@@ -87,6 +97,8 @@ def main():
         # volatility
         max_index = np.argmax([abs(change) for change in res_data])
         futre_change = {'max_chage': res_data[max_index] * 100, 'max_index': max_index}
+        # scaling 할경우
+        # futre_change = {'max_chage': res_data[max_index], 'max_index': max_index}
         print("------------------------------------------------------")
         print("future price change", futre_change['max_chage'], "%")
     else:
@@ -125,7 +137,7 @@ def main():
         #단 숏 포지션일 경우 수익이 나면 마이너스로 표시 되고 손실이 나면 플러스가 표시 되므로 -1을 곱하여 바꿔준다.
         if position['amount'] < 0:
             revenue_rate = revenue_rate * -1.0
-        #레버리지를 곱한 실제 수익율
+        #레버리지를 곱한 실제 수익율 - 원래 수량보다 레버리지률을 곱한만큼 더 산 것이므로 수익율도 레버리지 곱한 것이 된다.
         leverage_revenu_rate = revenue_rate * LEVERAGE  
         
         print("Revenue Rate : ", revenue_rate,", Real Revenue Rate : ", leverage_revenu_rate)
