@@ -11,7 +11,7 @@ from src.component.binance.constraint import (
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
-    FUTURE_MAX_LEN, FUTURE_MIN_LEN
+    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -94,7 +94,7 @@ def main():
     
     #첫 매수 비중을 구한다.. 여기서는 5%! 
     # * 20.0 을 하면 20%가 되겠죠? 마음껏 조절하세요!
-    first_amount = one_percent_amount * 5.0
+    first_amount = one_percent_amount * TRADE_RATE
 
     # 비트코인의 경우 0.001로 그보다 작은 수량으로 주문을 넣으면 오류가 납니다.!
     #최소 주문 수량을 가져온다 
@@ -182,8 +182,8 @@ def main():
         leverage_danger_rate = DANGER_RATE * LEVERAGE
         
         #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
-        amount = one_percent_amount * 5.0
-        profit_amount = one_percent_amount * 5.0 * PROFIT_AMOUNT_MULTIPLIER
+        amount = one_percent_amount * TRADE_RATE
+        profit_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
         if amount < minimun_amount:
             amount = minimun_amount
         if profit_amount < minimun_amount:
