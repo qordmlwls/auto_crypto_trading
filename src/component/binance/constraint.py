@@ -24,7 +24,7 @@ DANGER_RATE = -5.0
 
 # 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
 FUTURE_PRICE_RATE = 0.15
-MINUS_FUTURE_PRICE_RATE = -0.09
+MINUS_FUTURE_PRICE_RATE = -0.10
 # Real Revenue
 STOP_PROFIT_RATE = 0.15
 # Revenue
