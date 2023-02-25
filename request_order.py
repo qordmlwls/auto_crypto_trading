@@ -148,7 +148,7 @@ def main():
         #레버리지를 곱한 실제 손절 할 마이너스 수익율
         #레버리지를 곱하고 난 여기가 실제 내 원금 대비 실제 손실율입니다!
         leverage_danger_rate = DANGER_RATE * LEVERAGE
-        # @TODO: 이미 잡은 포지션에 따른 매수매도 로직
+        
         #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
         amount = one_percent_amount * 5.0
         profit_amount = one_percent_amount * 5.0 * PROFIT_AMOUNT_MULTIPLIER

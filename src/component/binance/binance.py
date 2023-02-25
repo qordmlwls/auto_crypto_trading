@@ -129,8 +129,8 @@ class Binance:
     #네번째 웹훅 알림에서 사용할때는 마지막 파라미터를 False로 넘겨서 사용한다. 트레이딩뷰 웹훅 강의 참조..
     def set_stop_loss(self, ticker, cut_rate, rest=True):
         
-        if rest:
-            time.sleep(0.1)
+        if rest:  # cancel중일 수 있으므로 10초간 대기한다.
+            time.sleep(10)
              
         # 주문 정보를 읽어온다.
         orders = self.binance.fetch_orders(ticker)
@@ -151,8 +151,8 @@ class Binance:
             or (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) \
             or (stop_loss_ok and order['side'] == 'sell' and position['amount'] < 0):
             
-            if rest:
-                time.sleep(10.0)
+            # if rest:
+            #     time.sleep(10.0)
             target_symbol = ticker.replace("/", "")
             position = self.position_check(target_symbol)
             if (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) or (stop_loss_ok and order['side'] == 'sell' and position['amount'] < 0):
