@@ -17,8 +17,17 @@ from src.module.db.redis.redis import Redis
 
 
 def chek_futre_price(current_price, future_price_list: List):
-    chages = [abs(future_price - current_price) for future_price in future_price_list]
-    max_index = np.argmax(chages)
+    pos_cnt = len([price for price in future_price_list if price > current_price])
+    neg_cnt = len([price for price in future_price_list if price < current_price])
+    # pos, neg중 더 많은 쪽의 change를 계산하고, max_index를 반환한다.
+    if pos_cnt > neg_cnt:
+        chages = [future_price - current_price for future_price in future_price_list]
+        max_index = np.argmax(chages)
+    else:
+        chages = [current_price - future_price for future_price in future_price_list]
+        max_index = np.argmin(chages)
+    # chages = [abs(future_price - current_price) for future_price in future_price_list]
+    # max_index = np.argmax(chages)
     return {
         'max_chage': (future_price_list[max_index] - current_price) / current_price * 100,
         'max_index': max_index,
