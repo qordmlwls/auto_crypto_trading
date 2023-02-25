@@ -197,6 +197,7 @@ def main():
                 # 5% 매도
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도")
+                # current_price = binance.get_now_price(TARGET_COIN_TICKER)
                 binance.create_market_order(TARGET_COIN_TICKER, "sell", profit_amount)
                 # binance.create_order(TARGET_COIN_TICKER, "sell", amount, current_price)
                 position["amount"] = position["amount"] - profit_amount
@@ -204,6 +205,7 @@ def main():
             elif position["amount"] < 0:
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수")
+                # current_price = binance.get_now_price(TARGET_COIN_TICKER)
                 # binance.create_order(TARGET_COIN_TICKER, "buy", amount, current_price)
                 binance.create_market_order(TARGET_COIN_TICKER, "buy", profit_amount)
                 position["amount"] = position["amount"] + profit_amount

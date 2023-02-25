@@ -10,7 +10,7 @@ TARGET_COIN_SYMBOL = 'BTCUSDT'
 
 TIME_WINDOW = 15
 
-LEVERAGE = 15
+LEVERAGE = 3  # 레버리지 많이 하면 세금 많이 내야함
 #아래는 타겟 수익율로 마음껏 조절하세요
 #타겟 레이트 0.001 
 TARGET_RATE = 0.001

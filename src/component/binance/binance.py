@@ -96,6 +96,11 @@ class Binance:
 
         return num_min_amount * min_amount
     
+    def get_now_price(self, ticker):
+        coin_info = self.binance.fetch_ticker(ticker)
+        coin_price = coin_info['last']
+        return coin_price
+    
     # 지정가로 매수한다. 첫번째: 코인 티커, 두번째: 포지션, 세번째: 매수 수량, 네번째: 매수 가격
     def create_order(self, ticker, side, amount, price):
         time.sleep(0.1)
