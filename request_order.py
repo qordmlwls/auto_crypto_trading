@@ -123,6 +123,9 @@ def main():
             # binance.create_order(TARGET_COIN_TICKER, 'sell', first_amount, current_price)
             binance.create_market_order(TARGET_COIN_TICKER, 'sell', first_amount)
             binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+        else:
+            # 혹시 스탑로스 걸려있음 제거한다.
+            binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
 
         
     #0이 아니라면 포지션 잡은 상태

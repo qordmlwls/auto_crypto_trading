@@ -95,6 +95,9 @@ class GrudModel(LightningModule):
             out = self.activation_fn(out)
         else:
             pass
+        # to detect saturation effect
+        print('out max: ', out.max())
+        print('out min: ', out.min())
         # out = F.relu(out)
         # out = self.drop_out_layer(self.activation_fn(out))
         # out = self.drop_out_layer(self.activation_fn(self.intermediate(out)))

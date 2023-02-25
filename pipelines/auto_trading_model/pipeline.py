@@ -200,7 +200,7 @@ def get_pipeline(
         column_limit=50,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
-        activation_function="none"):
+        activation_function="tanh"):
     """_summary_
 
     Args:

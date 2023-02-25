@@ -136,16 +136,20 @@ class Binance:
         orders = self.binance.fetch_orders(ticker)
         
         stop_loss_ok = False
+        stop_order_list = []
         for order in orders:
             
             if order['status'] == "open" and order['type'] == 'stop_market':
-                # print(order)
+                print(order)
+                stop_order_list.append(order)
                 stop_loss_ok = True
-                break
+                # break
         target_symbol = ticker.replace("/", "")
         position = self.position_check(target_symbol)
         # 스탑로스가 없거나 반대로 걸려있으면 스탑로스를 건다.
-        if not stop_loss_ok or (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) or (stop_loss_ok and order['side'] == 'sell' and position['amount'] < 0):
+        if (not stop_loss_ok and position['amount'] !=0) \
+            or (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) \
+            or (stop_loss_ok and order['side'] == 'sell' and position['amount'] < 0):
             
             if rest:
                 time.sleep(10.0)
@@ -180,9 +184,11 @@ class Binance:
             print("####STOPLOSS SETTING DONE ######################")
         # 포지션 없다면 스탑로스를 취소한다.
         elif stop_loss_ok and position['amount'] == 0:
-            self.binance.cancel_order(order['id'], ticker)
+            for order in stop_order_list:
+                self.binance.cancel_order(order['id'], ticker)
             print("####STOPLOSS CANCEL DONE ######################")
-            
+        else:
+            return
             
     # def set_stop_loss_price(self, ticker, stop_price, rest=True):
     #     if rest:
