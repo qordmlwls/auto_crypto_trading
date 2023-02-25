@@ -146,6 +146,8 @@ class Binance:
                 # break
         target_symbol = ticker.replace("/", "")
         position = self.position_check(target_symbol)
+        if len(stop_order_list) > 0:
+            order = stop_order_list[0]
         # 스탑로스가 없거나 반대로 걸려있으면 스탑로스를 건다.
         if (not stop_loss_ok and position['amount'] !=0) \
             or (stop_loss_ok and order['side'] == 'buy' and position['amount'] > 0) \
