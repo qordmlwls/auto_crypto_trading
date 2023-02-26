@@ -24,10 +24,10 @@ logger.addHandler(logging.StreamHandler())
 
 
 def main():
-    s3 = S3(BUKET_NAME)
-    for key in s3.s3.Bucket(BUKET_NAME).objects.all():
-        if key.key.startswith('data/data_'):
-            s3.download_file(key.key, join(DATA_DIR, key.key.split('/')[-1]))
+    # s3 = S3(BUKET_NAME)
+    # for key in s3.s3.Bucket(BUKET_NAME).objects.all():
+    #     if key.key.startswith('data/data_'):
+    #         s3.download_file(key.key, join(DATA_DIR, key.key.split('/')[-1]))
     file_list = os.listdir(DATA_DIR)
     data_list = []
     for file in file_list:

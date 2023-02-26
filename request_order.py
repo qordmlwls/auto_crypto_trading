@@ -227,7 +227,7 @@ def main():
                 binance.create_market_order(TARGET_COIN_TICKER, "sell", amount)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 print("------------------------------------------------------")
-            elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and leverage_revenu_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
+            elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
                 # 포지션 종료, 5% 추가 매수
                 print("------------------------------------------------------")
                 print("Buy", amount, TARGET_COIN_TICKER)
@@ -269,7 +269,7 @@ def main():
                 binance.create_market_order(TARGET_COIN_TICKER, "buy", amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-            elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and leverage_revenu_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
+            elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
