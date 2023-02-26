@@ -196,6 +196,14 @@ class Binance:
             print("####STOPLOSS CANCEL DONE ######################")
         else:
             return
+    
+    def cancel_failed_order(self, ticker):
+        time.sleep(0.1)
+        orders = self.binance.fetch_orders(ticker)
+        for order in orders:
+            if order['status'] == "open" and order['type'] == 'limit':
+                self.binance.cancel_order(order['id'], ticker)
+                
             
     # def set_stop_loss_price(self, ticker, stop_price, rest=True):
     #     if rest:
