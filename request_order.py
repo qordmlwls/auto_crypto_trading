@@ -121,12 +121,18 @@ def main():
         if 'plus_future_changes' in future_changes.keys():
             if len(future_changes["plus_future_changes"]) >= FUTURE_MIN_LEN:
                 # 상위권을 cut_change로 정한다.
-                future_changes["plus_future_changes"].sort(reverse=False)
-                PLUS_FUTURE_PRICE_RATE = future_changes["plus_future_changes"][int(len(future_changes["plus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
+                plus_chages = future_changes["plus_future_changes"].copy()
+                plus_chages.sort(reverse=False)
+                # future_changes["plus_future_changes"].sort(reverse=False)
+                # PLUS_FUTURE_PRICE_RATE = future_changes["plus_future_changes"][int(len(future_changes["plus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
+                PLUS_FUTURE_PRICE_RATE = plus_chages[int(len(plus_chages) * FUTURE_CHANGE_MULTIPLIER)]
         if 'minus_future_changes' in future_changes.keys():
             if len(future_changes["minus_future_changes"]) >= FUTURE_MIN_LEN:
-                future_changes["minus_future_changes"].sort(reverse=True)
-                MINUS_FUTURE_PRICE_RATE = future_changes["minus_future_changes"][int(len(future_changes["minus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
+                minus_chages = future_changes["minus_future_changes"].copy()
+                minus_chages.sort(reverse=True)
+                # future_changes["minus_future_changes"].sort(reverse=True)
+                # MINUS_FUTURE_PRICE_RATE = future_changes["minus_future_changes"][int(len(future_changes["minus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
+                MINUS_FUTURE_PRICE_RATE = minus_chages[int(len(minus_chages) * FUTURE_CHANGE_MULTIPLIER)]
         with open(os.path.join(FUTURE_CHANGES_DIR, "future_changes.json"), "w") as f:
             json.dump(future_changes, f)
         print("------------------------------------------------------")
