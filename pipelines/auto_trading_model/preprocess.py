@@ -7,6 +7,7 @@ from distutils.dir_util import copy_tree
 import logging
 
 from src.component.preprocess.preprocess import preprocess
+from src.module.db.s3 import S3
 
 
 ROOT_DIR = '/opt/ml/processing'
@@ -15,12 +16,18 @@ OUTPUT_DIR = join(ROOT_DIR, 'output')
 TRAIN_CODE_DIR = join(ROOT_DIR, 'code')
 DEPLOY_CODE_DIR = join(ROOT_DIR, 'deploy_code')
 
+BUKET_NAME = 'autocryptotrading'
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
 def main():
+    s3 = S3(BUKET_NAME)
+    for key in s3.s3.Bucket(BUKET_NAME).objects.all():
+        if key.key.startswith('data/data_'):
+            s3.download_file(key.key, join(DATA_DIR, key.key.split('/')[-1]))
     file_list = os.listdir(DATA_DIR)
     data_list = []
     for file in file_list:
