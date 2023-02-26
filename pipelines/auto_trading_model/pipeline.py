@@ -88,7 +88,8 @@ def get_preprocessing_step(role,
         role=role,
         instance_type=instance_type,
         instance_count=1,
-        sagemaker_session=pipeline_session
+        sagemaker_session=pipeline_session,
+        volume_size_in_gb=50
     )
     return ProcessingStep(
         name='Preprocessing',
@@ -231,7 +232,8 @@ def get_pipeline(
     step_preprocess = get_preprocessing_step(role,
                                              processing_image_uri,
                                              pipeline_session=pipeline_session,
-                                             instance_type="ml.m5.4xlarge"
+                                            #  instance_type="ml.m5.4xlarge"
+                                             instance_type="ml.m4.10xlarge"
                                              )
     training_inputs = {
         "crypto_data": TrainingInput(

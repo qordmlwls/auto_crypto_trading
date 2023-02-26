@@ -4,6 +4,7 @@ import json
 import tarfile
 import shutil
 from distutils.dir_util import copy_tree
+import logging
 
 from src.component.preprocess.preprocess import preprocess
 
@@ -14,6 +15,10 @@ OUTPUT_DIR = join(ROOT_DIR, 'output')
 TRAIN_CODE_DIR = join(ROOT_DIR, 'code')
 DEPLOY_CODE_DIR = join(ROOT_DIR, 'deploy_code')
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
 
 def main():
     file_list = os.listdir(DATA_DIR)
@@ -23,8 +28,14 @@ def main():
             with open(join(DATA_DIR, file), 'r') as f:
                 data = json.load(f)
             data_list.append(data)
+    logger.info(f'Number of data: {len(data_list)}')
+    logger.info(f'First data: {data_list[0]}')
+    logger.info(f'Last data: {data_list[-1]}')
     data_list.sort(key=lambda x: x['ticker']['timestamp'])
     df = preprocess(data_list)
+    logger.info(f'Number of rows: {len(df)}')
+    logger.info(f'First row: {df.iloc[0]}')
+    logger.info(f'Last row: {df.iloc[-1]}')
     df.to_csv(join(OUTPUT_DIR, 'preprocessed.csv'), index=False)
     shutil.move('/opt/ml/code/pipelines/auto_trading_model/train.py', '/opt/ml/train.py') 
     shutil.move('/opt/ml/code/pipelines/auto_trading_model/inference.py', '/opt/ml/inference.py')   
