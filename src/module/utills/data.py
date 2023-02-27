@@ -52,6 +52,11 @@ def parallelize_list_to_df(data_list: List, func):
     df = pd.concat(pool.map(func, data_split))
     return df
 
+def get_ma(df: pd.DataFrame, window: int) -> pd.DataFrame:
+    df[f'ma_{window}'] = df['close'].rolling(window=window).mean()
+    # df[f'ma_{window}'] = df[f'ma_{window}'].shift(1)
+    df[f'ma_{window}'] = df[f'ma_{window}'].fillna(0)
+    return df
 
 if __name__ == '__main__':
     data = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])

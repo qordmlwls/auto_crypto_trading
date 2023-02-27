@@ -9,6 +9,7 @@ TARGET_COIN_TICKER = 'BTC/USDT'
 TARGET_COIN_SYMBOL = 'BTCUSDT'
 
 TIME_WINDOW = 15
+MOVING_AVERAGE_WINDOW = 100
 
 LEVERAGE = 3  # 레버리지 많이 하면 세금 많이 내야함
 #아래는 타겟 수익율로 마음껏 조절하세요
