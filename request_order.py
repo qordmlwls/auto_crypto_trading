@@ -74,6 +74,9 @@ def main():
         # next 30분 각각의 예측값을 받아온다. 길이 30
         res_data = json.loads(res["Body"].read().decode("utf-8"))["prediction"]
         # res_data = [24000 for _ in range(30)]
+    else:
+        print("Not enough data")
+        return
         
         
     current_price = data_list[-1]["close"]
