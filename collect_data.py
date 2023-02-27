@@ -36,10 +36,13 @@ def main():
 
     os.remove(os.path.join(DATA_DIR, f'data_{now}.json'))
 
-    if redis.size() >= TIME_WINDOW:
+    if redis.size() >= MOVING_AVERAGE_WINDOW:
+    # if redis.size() >= TIME_WINDOW:
         keys = list(redis.keys())
         keys.sort()
-        for key in keys[:len(keys) - TIME_WINDOW + 1]:
+        for key in keys[:len(keys) - MOVING_AVERAGE_WINDOW + 1]:
+        
+        # for key in keys[:len(keys) - TIME_WINDOW + 1]:    
             redis.delete(key)
         # redis.delete(keys[0])
 

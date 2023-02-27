@@ -11,7 +11,7 @@ from src.component.binance.constraint import (
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
-    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE
+    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -58,7 +58,8 @@ def main():
     
     # 수집 시간
     time.sleep(0.1)
-    if redis.size() == TIME_WINDOW:
+    # if redis.size() == TIME_WINDOW:
+    if redis.size() == MOVING_AVERAGE_WINDOW:
         
         keys = list(redis.keys())
         keys.sort()
@@ -209,14 +210,14 @@ def main():
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도")
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
                 # binance.create_market_order(TARGET_COIN_TICKER, "sell", profit_amount)
-                binance.create_order(TARGET_COIN_TICKER, "sell", amount, current_price)
+                binance.create_order(TARGET_COIN_TICKER, "sell", profit_amount, current_price)
                 position["amount"] = position["amount"] - profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position["amount"] < 0:
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수")
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, "buy", amount, current_price)
+                binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, current_price)
                 # binance.create_market_order(TARGET_COIN_TICKER, "buy", profit_amount)
                 position["amount"] = position["amount"] + profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
