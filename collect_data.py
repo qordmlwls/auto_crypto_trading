@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 
-from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY, TARGET_COIN_SYMBOL, TARGET_COIN_TICKER, TIME_WINDOW
+from src.component.binance.constraint import BINANCE_API_KEY, BINANCE_SECRET_KEY, TARGET_COIN_SYMBOL, TARGET_COIN_TICKER, TIME_WINDOW, MOVING_AVERAGE_WINDOW
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
 from src.module.db.s3 import S3
@@ -28,7 +28,7 @@ def main():
         "order_book": order_book,
         "ticker": ticker
     }
-    # @TODO: Redis, s3에 저장
+    # @TODO: 배포 후 moving_average_window만큼 redis저장
     with open(os.path.join(DATA_DIR, f'data_{now}.json'), 'w') as f:
         json.dump(data, f)
 
@@ -36,10 +36,13 @@ def main():
 
     os.remove(os.path.join(DATA_DIR, f'data_{now}.json'))
 
-    if redis.size() >= TIME_WINDOW:
+    if redis.size() >= MOVING_AVERAGE_WINDOW:
+    # if redis.size() >= TIME_WINDOW:
         keys = list(redis.keys())
         keys.sort()
-        for key in keys[:len(keys) - TIME_WINDOW + 1]:
+        for key in keys[:len(keys) - MOVING_AVERAGE_WINDOW + 1]:
+        
+        # for key in keys[:len(keys) - TIME_WINDOW + 1]:    
             redis.delete(key)
         # redis.delete(keys[0])
 

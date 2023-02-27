@@ -1,12 +1,12 @@
 from os.path import join
-from typing import List
+from typing import List, Dict
 
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
 from src.component.binance.constraint import TIME_WINDOW
-from src.module.utills.data import parallelize_list_to_df
+from src.module.utills.data import parallelize_list_to_df, get_ma
 
 from warnings import simplefilter
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -50,7 +50,7 @@ def process_func(data_list: np.ndarray) -> pd.DataFrame:
     return df
     
         
-def preprocess(data_list: List) -> pd.DataFrame:
+def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
 
     # df_list = []
     # for idx, data in tqdm(enumerate(data_list)):
@@ -85,8 +85,11 @@ def preprocess(data_list: List) -> pd.DataFrame:
     # truncate df for time series
     df = parallelize_list_to_df(data_list, process_func)
     df.sort_values(by='datetime', inplace=True)
-    df.reset_index(drop=True, inplace=True)
+    
     df.drop('datetime', axis=1, inplace=True)
+    df = get_ma(df, config['moving_average_window'])
+    df.reset_index(drop=True, inplace=True)
+    df = df.iloc[config['moving_average_window'] - 1:]
     if len(df) % TIME_WINDOW != 0:
         df = df.iloc[(len(df) % TIME_WINDOW):]
     return df

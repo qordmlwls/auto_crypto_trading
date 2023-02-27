@@ -21,6 +21,7 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import (
     ProcessingStep, TrainingStep, CreateModelStep
 )
+from src.component.binance.constraint import MOVING_AVERAGE_WINDOW
 
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -81,7 +82,8 @@ def get_pipeline_session(region, default_bucket):
 def get_preprocessing_step(role, 
                            image_uri,
                            instance_type,
-                           pipeline_session):
+                           pipeline_session,
+                           moving_average_window,):
     processor = Processor(
         entrypoint=['python3', 'code/pipelines/auto_trading_model/preprocess.py'],
         image_uri=image_uri,
@@ -94,6 +96,9 @@ def get_preprocessing_step(role,
     return ProcessingStep(
         name='Preprocessing',
         processor=processor,
+        job_arguments=[
+            "--moving_average_window", moving_average_window,
+        ],
         inputs=[
             ProcessingInput(
                 source='s3://sagemaker-autocryptotrading/data',
@@ -117,7 +122,8 @@ def get_train_step(role,
                    inputs: Dict,
                    epochs,
                    column_limit,
-                   activation_function):
+                   activation_function,
+                   moving_average_window):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -132,6 +138,7 @@ def get_train_step(role,
             'epochs': epochs,
             'column_limit': column_limit,
             'activation_function': activation_function,
+            'moving_average_window': moving_average_window,
         },
         sagemaker_session=pipeline_session
     )
@@ -201,7 +208,8 @@ def get_pipeline(
         column_limit=50,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
-        activation_function="tanh"):
+        activation_function="tanh",
+        moving_average_window=MOVING_AVERAGE_WINDOW):
     """_summary_
 
     Args:
@@ -233,7 +241,8 @@ def get_pipeline(
                                              processing_image_uri,
                                              pipeline_session=pipeline_session,
                                             #  instance_type="ml.m5.4xlarge"
-                                             instance_type="ml.m4.10xlarge"
+                                             instance_type="ml.m4.10xlarge",
+                                             moving_average_window=str(moving_average_window)
                                              )
     training_inputs = {
         "crypto_data": TrainingInput(
@@ -249,7 +258,8 @@ def get_pipeline(
                                 inputs=training_inputs,
                                 epochs=str(epochs),
                                 column_limit=str(column_limit),
-                                activation_function=activation_function
+                                activation_function=activation_function,
+                                moving_average_window=str(moving_average_window)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,

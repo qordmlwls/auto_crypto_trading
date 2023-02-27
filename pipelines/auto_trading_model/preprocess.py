@@ -1,5 +1,8 @@
 import os
 from os.path import join
+from typing import Dict
+import argparse
+
 import json
 import tarfile
 import shutil
@@ -23,7 +26,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
-def main():
+def main(config: Dict):
     # s3 = S3(BUKET_NAME)
     # for key in s3.s3.Bucket(BUKET_NAME).objects.all():
     #     if key.key.startswith('data/data_'):
@@ -39,7 +42,7 @@ def main():
     logger.info(f'First data: {data_list[0]}')
     logger.info(f'Last data: {data_list[-1]}')
     data_list.sort(key=lambda x: x['ticker']['timestamp'])
-    df = preprocess(data_list)
+    df = preprocess(data_list, config)
     logger.info(f'Number of rows: {len(df)}')
     logger.info(f'First row: {df.iloc[0]}')
     logger.info(f'Last row: {df.iloc[-1]}')
@@ -56,5 +59,9 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--moving_average_window', type=int, default=100)
+    parameters = parser.parse_args()
+    config = parameters.__dict__
+    main(config)
     
