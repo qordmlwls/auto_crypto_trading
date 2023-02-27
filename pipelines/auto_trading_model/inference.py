@@ -95,20 +95,30 @@ def output_fn(prediction, response_content_type):
 # for testing
 
 # if __name__ == '__main__':
-#     ROOT_DIR = '/opt/ml/preprocessing'
-#     DATA_DIR = os.path.join(ROOT_DIR, 'data')
-#     file_list = os.listdir(DATA_DIR)
-#     data_list = []
-#     for file in file_list:
-#         if 'data_' in file:
-#             with open(os.path.join(DATA_DIR, file), 'r') as f:
-#                 data = json.load(f)
-#             data_list.append(data)
-#     data_list.sort(key=lambda x: x['ticker']['timestamp'])
-#     data_list = data_list[:30]
-#     request_body = json.dumps({'data_list': data_list})
+#     from src.module.db.redis.redis import Redis
+#     from src.component.binance.constraint import MOVING_AVERAGE_WINDOW
+#     redis = Redis(host="localhost", port=6379, db=0)
     
+#     if redis.size() >= MOVING_AVERAGE_WINDOW:
+#         keys = list(redis.keys())
+#         keys.sort()
+#         data_list = redis.get_many(keys)
+#         request_body = json.dumps({
+#             "data_list": data_list
+#         })
+# #     ROOT_DIR = '/opt/ml/preprocessing'
+# #     DATA_DIR = os.path.join(ROOT_DIR, 'data')
+# #     file_list = os.listdir(DATA_DIR)
+# #     data_list = []
+# #     for file in file_list:
+# #         if 'data_' in file:
+# #             with open(os.path.join(DATA_DIR, file), 'r') as f:
+# #                 data = json.load(f)
+# #             data_list.append(data)
+# #     data_list.sort(key=lambda x: x['ticker']['timestamp'])
+# #     data_list = data_list[:30]
+#     request_body = json.dumps({'data_list': data_list})
 #     data = input_fn(request_body, 'application/json')
 #     model = model_fn(MODEL_DIR)
 #     prediction = predict_fn(data, model)
-#     out = output_fn(prediction, 'application/json')
+# #     out = output_fn(prediction, 'application/json')

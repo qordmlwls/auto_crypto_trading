@@ -59,7 +59,7 @@ def main():
     # 수집 시간
     time.sleep(0.1)
     # if redis.size() == TIME_WINDOW:
-    if redis.size() == MOVING_AVERAGE_WINDOW:
+    if redis.size() == MOVING_AVERAGE_WINDOW + TIME_WINDOW:
         
         keys = list(redis.keys())
         keys.sort()

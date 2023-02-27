@@ -28,7 +28,7 @@ TRADE_RATE = 5.0
 
 # 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
 FUTURE_CHANGES_DIR = '/home/ubuntu/auto_crypto_trading/future_changes'
-PLUS_FUTURE_PRICE_RATE = 0.15
+PLUS_FUTURE_PRICE_RATE = 0.19
 MINUS_FUTURE_PRICE_RATE = -0.10
 FUTURE_CHANGE_MULTIPLIER = 0.80
 FUTURE_MAX_LEN = 120  # 2시간
