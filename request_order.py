@@ -11,7 +11,7 @@ from src.component.binance.constraint import (
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
-    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW
+    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -114,7 +114,8 @@ def main():
     
     #음수를 제거한 절대값 수량 ex -0.1 -> 0.1 로 바꿔준다.
     abs_amt = abs(position["amount"])
-
+    plus_switching_rate = 0.24
+    minus_switching_rate = -0.14
     if res_data:
         global PLUS_FUTURE_PRICE_RATE
         global MINUS_FUTURE_PRICE_RATE
@@ -132,6 +133,7 @@ def main():
                 # future_changes["plus_future_changes"].sort(reverse=False)
                 # PLUS_FUTURE_PRICE_RATE = future_changes["plus_future_changes"][int(len(future_changes["plus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
                 PLUS_FUTURE_PRICE_RATE = plus_chages[int(len(plus_chages) * FUTURE_CHANGE_MULTIPLIER)]
+                plus_switching_rate = plus_chages[int(len(plus_chages) * SWITCHING_CHANGE_MULTIPLIER)]
         if 'minus_future_changes' in future_changes.keys():
             if len(future_changes["minus_future_changes"]) >= FUTURE_MIN_LEN:
                 minus_chages = future_changes["minus_future_changes"].copy()
@@ -139,12 +141,15 @@ def main():
                 # future_changes["minus_future_changes"].sort(reverse=True)
                 # MINUS_FUTURE_PRICE_RATE = future_changes["minus_future_changes"][int(len(future_changes["minus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
                 MINUS_FUTURE_PRICE_RATE = minus_chages[int(len(minus_chages) * FUTURE_CHANGE_MULTIPLIER)]
+                minus_switching_rate = minus_chages[int(len(minus_chages) * SWITCHING_CHANGE_MULTIPLIER)]
         with open(os.path.join(FUTURE_CHANGES_DIR, "future_changes.json"), "w") as f:
             json.dump(future_changes, f)
         print("------------------------------------------------------")
         print("future price change", futre_change["max_chage"], "%")
         print("plus future price change", PLUS_FUTURE_PRICE_RATE, "%")
         print("minus future price change", MINUS_FUTURE_PRICE_RATE, "%")
+        print("plus switching price change", plus_switching_rate, "%")
+        print("minus switching price change", minus_switching_rate, "%")
     else:
         pass
         
@@ -271,7 +276,7 @@ def main():
                 
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우
-            elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > 0:
+            elif futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0:
                 # 포지션 종료, 5% 추가 매수
                 print("------------------------------------------------------")
                 print("반대 신호가 강해 포지션 스위칭")
@@ -318,7 +323,7 @@ def main():
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우
-            elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > 0:
+            elif futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0:
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
                 print("반대 신호가 강해 포지션 스위칭")
