@@ -247,6 +247,14 @@ def main():
                 binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, current_price)
                 position["amount"] = position["amount"] + profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+        
+        # # 수익은 별로 없지만 반대방향 신호가 강한 경우
+        # elif leverage_revenu_rate > 0:
+        #     if abs(position["amount"]) < profit_amount:
+        #         profit_amount = abs(position["amount"])
+            
+        #     if position['amount'] > 0 and
+            
                 
 
         # 숏 포지션일 경우
@@ -260,9 +268,13 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 print("------------------------------------------------------")
-            elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
+                
+            # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
+            # 수익은 별로 없지만 반대방향 신호가 강한 경우
+            elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > 0:
                 # 포지션 종료, 5% 추가 매수
                 print("------------------------------------------------------")
+                print("반대 신호가 강해 포지션 스위칭")
                 print("Buy", amount, TARGET_COIN_TICKER)
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
                 binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
@@ -304,9 +316,12 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-            elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
+            # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
+            # 수익은 별로 없지만 반대방향 신호가 강한 경우
+            elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > 0:
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
+                print("반대 신호가 강해 포지션 스위칭")
                 print("Sell", amount, TARGET_COIN_TICKER)
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
                 binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
