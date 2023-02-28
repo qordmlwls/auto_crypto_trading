@@ -224,6 +224,30 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "buy", profit_amount)
                 position["amount"] = position["amount"] + profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+        # 수익은 별로 없지만 남은 잔고가 없을 경우
+        elif (position['free'] / (position['total'] + 1)) < 0.01 and leverage_revenu_rate > 0:
+            if abs(position["amount"]) < profit_amount:
+                profit_amount = abs(position["amount"])
+            
+            if position["amount"] > 0:
+            
+                print("------------------------------------------------------")
+                print(f"이익이 별로 없지만 남은 잔고가 없음, {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도")
+                current_price = binance.get_now_price(TARGET_COIN_TICKER)
+                # binance.create_market_order(TARGET_COIN_TICKER, "sell", profit_amount)
+                binance.create_order(TARGET_COIN_TICKER, "sell", profit_amount, current_price)
+                position["amount"] = position["amount"] - profit_amount
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            
+            elif position["amount"] < 0:
+                
+                print("------------------------------------------------------")
+                print(f"이익이 별로 없지만 남은 잔고가 없음, {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수")
+                current_price = binance.get_now_price(TARGET_COIN_TICKER)
+                binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, current_price)
+                position["amount"] = position["amount"] + profit_amount
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+                
 
         # 숏 포지션일 경우
         if position["amount"] < 0 and res_data:
