@@ -10,6 +10,7 @@ TARGET_COIN_SYMBOL = 'BTCUSDT'
 
 TIME_WINDOW = 15
 MOVING_AVERAGE_WINDOW = 100
+COLUMN_LIMIT = 100
 
 LEVERAGE = 3  # 레버리지 많이 하면 세금 많이 내야함
 #아래는 타겟 수익율로 마음껏 조절하세요
@@ -31,7 +32,7 @@ FUTURE_CHANGES_DIR = '/home/ubuntu/auto_crypto_trading/future_changes'
 PLUS_FUTURE_PRICE_RATE = 0.24
 MINUS_FUTURE_PRICE_RATE = -0.14
 FUTURE_CHANGE_MULTIPLIER = 0.80  # 진입 비율
-SWITCHING_CHANGE_MULTIPLIER = FUTURE_CHANGE_MULTIPLIER + 0.1 # 스위칭하는 비율. 진입 비율보다 더 빡세게 잡는다.
+SWITCHING_CHANGE_MULTIPLIER = 0.90  # 스위칭하는 비율. 진입 비율보다 더 빡세게 잡는다.
 FUTURE_MAX_LEN = 120  # 2시간
 FUTURE_MIN_LEN = 60  # 1시간
 # Real Revenue

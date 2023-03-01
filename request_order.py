@@ -4,6 +4,7 @@ from typing import List, Dict, Tuple
 
 import boto3
 import numpy as np
+import pandas as pd
 import time
 
 from src.component.binance.constraint import (
@@ -11,10 +12,12 @@ from src.component.binance.constraint import (
     TARGET_COIN_SYMBOL, TARGET_COIN_TICKER,
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
-    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER
+    FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER,
+    COLUMN_LIMIT
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
+from src.module.utills.data import get_ma
 
 
 def chek_futre_price(res_data: List, future_changes: Dict) -> Tuple[Dict, Dict]:
@@ -40,6 +43,15 @@ def chek_futre_price(res_data: List, future_changes: Dict) -> Tuple[Dict, Dict]:
     future_change = {"max_chage": res_data[max_index] * 100, "max_index": max_index}
     return future_change, future_changes
 
+def get_price_ma_variant(data_list: List, window: int) -> Tuple[float, float]:
+    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{window}"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+                + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
+                + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
+    df = pd.DataFrame(data_list)
+    df = get_ma(df, window)[columns]
+    price_variant = df["close"].iloc[-1] - df["close"].iloc[-window] 
+    ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-window]
+    return price_variant, ma_vaiant
 
 def main():
     client = boto3.client("sagemaker-runtime")
@@ -77,7 +89,7 @@ def main():
     else:
         print("Not enough data")
         return
-        
+    # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
         
     current_price = data_list[-1]["close"]
     # scale이 안 맞으므로 맞춰줌
@@ -275,8 +287,9 @@ def main():
                 print("------------------------------------------------------")
                 
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
-            # 수익은 별로 없지만 반대방향 신호가 강한 경우
-            elif futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0:
+            # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
+            elif (futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0) \
+                 or (futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE):
                 # 포지션 종료, 5% 추가 매수
                 print("------------------------------------------------------")
                 print("반대 신호가 강해 포지션 스위칭")
@@ -286,6 +299,23 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            
+            # 손절 로직 물림 방지, 반대방향 신호가 강하고 ma, 가격도 반대방향으로 이동중일 경우 + 매수 비중이 20% 이상일 경우, 손실 보고 있을 경우
+                        
+            elif (futre_change["max_chage"] > plus_switching_rate):
+                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                if (price_variant > 0 and ma_variant > 0) \
+                    and ((position['free'] / (position['total'] + 1)) > 0.2) \
+                    and (revenue_rate < DANGER_RATE):
+                    # 포지션 종료, 5% 추가 매수
+                    print("------------------------------------------------------")
+                    print("반대 신호가 강해 손절 후 포지션 스위칭")
+                    print("Buy", amount, TARGET_COIN_TICKER)
+                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
+                    binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
+                    # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
+                    print("------------------------------------------------------")
+                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
@@ -322,8 +352,9 @@ def main():
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
-            # 수익은 별로 없지만 반대방향 신호가 강한 경우
-            elif futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0:
+            # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
+            elif (futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0) \
+                 or (futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE):
                 # 포지션 종료, 5% 추가 매도
                 print("------------------------------------------------------")
                 print("반대 신호가 강해 포지션 스위칭")
@@ -333,7 +364,21 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-
+                
+            elif (futre_change["max_chage"] < minus_switching_rate):
+                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                if (price_variant < 0 and ma_variant < 0) \
+                    and ((position['free'] / (position['total'] + 1)) > 0.2) \
+                    and (revenue_rate < DANGER_RATE):
+                    print("------------------------------------------------------")
+                    print("반대 신호가 강해 손절 후 포지션 스위칭")
+                    print("Sell", amount, TARGET_COIN_TICKER)
+                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
+                    binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
+                    # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
+                    print("------------------------------------------------------")
+                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)                        
+                
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때 (스탑로스는 청산 방지용, 이건 손절용)
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
                 

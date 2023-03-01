@@ -6,7 +6,7 @@ import pandas as pd
 from distutils.dir_util import copy_tree
 
 from src.component.train.train import GruTrainer
-from src.component.binance.constraint import TIME_WINDOW
+from src.component.binance.constraint import TIME_WINDOW, COLUMN_LIMIT
 
 
 INPUT_DIR = '/opt/ml/input/data'
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_ratio', type=float, default=0.2, help='test ratio')
     parser.add_argument('--fp16', type=bool, default=True, help='fp16 mode')
     parser.add_argument('--patience', type=int, default=1000, help='patience for early stopping')
-    parser.add_argument('--column_limit', type=int, default=5, help='column limit for bid and ask')
+    parser.add_argument('--column_limit', type=int, default=COLUMN_LIMIT, help='column limit for bid and ask')
     parser.add_argument('--activation_function', type=str, default='none', help='activation function')
     parser.add_argument('--moving_average_window', type=int, default=100, help='moving average window')
     parameters = parser.parse_args()
