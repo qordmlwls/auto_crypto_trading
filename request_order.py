@@ -13,7 +13,7 @@ from src.component.binance.constraint import (
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
     FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER,
-    COLUMN_LIMIT
+    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -131,6 +131,7 @@ def main():
     if res_data:
         global PLUS_FUTURE_PRICE_RATE
         global MINUS_FUTURE_PRICE_RATE
+        global MINIMUM_FUTURE_PRICE_RATE
         futre_change, future_changes = chek_futre_price(res_data, future_changes)
         # volatility
         # max_index = np.argmax([abs(change) for change in res_data])
@@ -144,16 +145,28 @@ def main():
                 plus_chages.sort(reverse=False)
                 # future_changes["plus_future_changes"].sort(reverse=False)
                 # PLUS_FUTURE_PRICE_RATE = future_changes["plus_future_changes"][int(len(future_changes["plus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
-                PLUS_FUTURE_PRICE_RATE = plus_chages[int(len(plus_chages) * FUTURE_CHANGE_MULTIPLIER)]
-                plus_switching_rate = plus_chages[int(len(plus_chages) * SWITCHING_CHANGE_MULTIPLIER)]
+                if plus_chages[int(len(plus_chages) * FUTURE_CHANGE_MULTIPLIER)] < MINIMUM_FUTURE_PRICE_RATE:
+                    PLUS_FUTURE_PRICE_RATE = MINIMUM_FUTURE_PRICE_RATE
+                else:
+                    PLUS_FUTURE_PRICE_RATE = plus_chages[int(len(plus_chages) * FUTURE_CHANGE_MULTIPLIER)]
+                if plus_chages[int(len(plus_chages) * SWITCHING_CHANGE_MULTIPLIER)] < MINIMUM_FUTURE_PRICE_RATE:
+                    plus_switching_rate = MINIMUM_FUTURE_PRICE_RATE
+                else:
+                    plus_switching_rate = plus_chages[int(len(plus_chages) * SWITCHING_CHANGE_MULTIPLIER)]
         if 'minus_future_changes' in future_changes.keys():
             if len(future_changes["minus_future_changes"]) >= FUTURE_MIN_LEN:
                 minus_chages = future_changes["minus_future_changes"].copy()
                 minus_chages.sort(reverse=True)
                 # future_changes["minus_future_changes"].sort(reverse=True)
                 # MINUS_FUTURE_PRICE_RATE = future_changes["minus_future_changes"][int(len(future_changes["minus_future_changes"]) * FUTURE_CHANGE_MULTIPLIER)]
-                MINUS_FUTURE_PRICE_RATE = minus_chages[int(len(minus_chages) * FUTURE_CHANGE_MULTIPLIER)]
-                minus_switching_rate = minus_chages[int(len(minus_chages) * SWITCHING_CHANGE_MULTIPLIER)]
+                if minus_chages[int(len(minus_chages) * FUTURE_CHANGE_MULTIPLIER)] > -MINIMUM_FUTURE_PRICE_RATE:
+                    MINUS_FUTURE_PRICE_RATE = -MINIMUM_FUTURE_PRICE_RATE
+                else:
+                    MINUS_FUTURE_PRICE_RATE = minus_chages[int(len(minus_chages) * FUTURE_CHANGE_MULTIPLIER)]
+                if minus_chages[int(len(minus_chages) * SWITCHING_CHANGE_MULTIPLIER)] > -MINIMUM_FUTURE_PRICE_RATE:
+                    minus_switching_rate = -MINIMUM_FUTURE_PRICE_RATE
+                else:
+                    minus_switching_rate = minus_chages[int(len(minus_chages) * SWITCHING_CHANGE_MULTIPLIER)]
         with open(os.path.join(FUTURE_CHANGES_DIR, "future_changes.json"), "w") as f:
             json.dump(future_changes, f)
         print("------------------------------------------------------")
@@ -264,6 +277,9 @@ def main():
                 binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, current_price)
                 position["amount"] = position["amount"] + profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+        # 손실만 보고있고 물린 상태이다. 이런 경우 모델이 깨졌을 가능성이 높다. 다시 학습 요청
+        # subprocess.call("""python3 /home/ubuntu/auto_crypto_trading/pipelines/run_pipeline.py --module-name pipelines.auto_trading_model.pipeline --role-arn arn:aws:iam::080366477338:role/service-role/AmazonSageMaker-ExecutionRole-20220914T141823 --tags '[{"Key": "Test", "Value": "Test"}]' --kwargs '{"region": "ap-northeast-2", "role": "arn:aws:iam::080366477338:role/service-role/AmazonSageMaker-ExecutionRole-20220914T141823"}'
+        #         """, shell=True)
         
         # # 수익은 별로 없지만 반대방향 신호가 강한 경우
         # elif leverage_revenu_rate > 0:
@@ -304,8 +320,9 @@ def main():
                         
             elif (futre_change["max_chage"] > plus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                # 매수 비중 20% 초과
                 if (price_variant > 0 and ma_variant > 0) \
-                    and ((position['free'] / (position['total'] + 1)) > 0.2) \
+                    and (1 - (position['free'] / (position['total'] + 1)) > 0.2) \
                     and (revenue_rate < DANGER_RATE):
                     # 포지션 종료, 5% 추가 매수
                     print("------------------------------------------------------")
@@ -316,7 +333,15 @@ def main():
                     # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
                     print("------------------------------------------------------")
                     binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-                
+            
+            # 포지션 종료, exit 시그널
+            elif data_list[-1]["close"] - data_list[-3]["close"] > EXIT_PRICE_CHANGE:
+                print("------------------------------------------------------")
+                print("Exit Sinal이 강해 손절 감수하고 포지션 종료")
+                binance.create_market_order(TARGET_COIN_TICKER, "buy", abs_amt)
+                print("------------------------------------------------------")
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
                 
@@ -367,8 +392,9 @@ def main():
                 
             elif (futre_change["max_chage"] < minus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                # 매수 비중 20% 초과
                 if (price_variant < 0 and ma_variant < 0) \
-                    and ((position['free'] / (position['total'] + 1)) > 0.2) \
+                    and (1 - (position['free'] / (position['total'] + 1)) > 0.2) \
                     and (revenue_rate < DANGER_RATE):
                     print("------------------------------------------------------")
                     print("반대 신호가 강해 손절 후 포지션 스위칭")
@@ -378,6 +404,13 @@ def main():
                     # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
                     print("------------------------------------------------------")
                     binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)                        
+            
+            # 포지션 종료, exit 시그널
+            elif data_list[-1]["close"] - data_list[-3]["close"] < -EXIT_PRICE_CHANGE:
+                print("------------------------------------------------------")
+                print("Exit Signal이 강해 손절 감수하고 포지션 종료")
+                binance.create_market_order(TARGET_COIN_TICKER, "sell", abs_amt)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때 (스탑로스는 청산 방지용, 이건 손절용)
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:

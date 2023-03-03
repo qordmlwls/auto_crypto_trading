@@ -204,7 +204,7 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
-        epochs=2000,
+        epochs=200,
         column_limit=50,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
