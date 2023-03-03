@@ -7,7 +7,7 @@ from src.component.binance.constraint import (
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
     FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER,
-    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE
+    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE, RETRAIN_SIGNAL_RATE
 )
 from src.component.binance.binance import Binance
 
@@ -38,13 +38,13 @@ def main():
         #레버리지를 곱하고 난 여기가 실제 내 원금 대비 실제 손실율입니다!
         leverage_danger_rate = DANGER_RATE * LEVERAGE
         # 물려있고 손실만 보는 상태이면 모델이 깨졌을 가능성이 높다. 재학습 요청
-        # if (position['free'] / (position['total'] + 1)) < 0.01 and revenue_rate < 0:
-        #     print("Model is broken. Request retraining.")
-        #     subprocess.call("""python3 /home/ubuntu/auto_crypto_trading/pipelines/run_pipeline.py --module-name pipelines.auto_trading_model.pipeline --role-arn %s  --tags '[{"Key": "Test", "Value": "Test"}]' --kwargs '{"region": "ap-northeast-2", "role": "%s"}'
-        #                     """ % (SAGEMAKER_EXECUTION_ROLE, SAGEMAKER_EXECUTION_ROLE), shell=True)
-        #     return
-        print("""python3 /home/ubuntu/auto_crypto_trading/pipelines/run_pipeline.py --module-name pipelines.auto_trading_model.pipeline --role-arn %s  --tags '[{"Key": "Test", "Value": "Test"}]' --kwargs '{"region": "ap-northeast-2", "role": "%s"}'
-                            """ % (SAGEMAKER_EXECUTION_ROLE, SAGEMAKER_EXECUTION_ROLE))
+        if (position['free'] / (position['total'] + 1)) < RETRAIN_SIGNAL_RATE and revenue_rate < 0:
+            print("Model is broken. Request retraining.")
+            subprocess.call("""python3 /home/ubuntu/auto_crypto_trading/pipelines/run_pipeline.py --module-name pipelines.auto_trading_model.pipeline --role-arn %s  --tags '[{"Key": "Test", "Value": "Test"}]' --kwargs '{"region": "ap-northeast-2", "role": "%s"}'
+                            """ % (SAGEMAKER_EXECUTION_ROLE, SAGEMAKER_EXECUTION_ROLE), shell=True)
+            return
+        # print("""python3 /home/ubuntu/auto_crypto_trading/pipelines/run_pipeline.py --module-name pipelines.auto_trading_model.pipeline --role-arn %s  --tags '[{"Key": "Test", "Value": "Test"}]' --kwargs '{"region": "ap-northeast-2", "role": "%s"}'
+        #                     """ % (SAGEMAKER_EXECUTION_ROLE, SAGEMAKER_EXECUTION_ROLE))
 
 if __name__ == "__main__":
     main()

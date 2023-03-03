@@ -13,7 +13,7 @@ from src.component.binance.constraint import (
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
     FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER,
-    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE
+    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE, LOSS_CRITERIA_RATE
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -320,9 +320,9 @@ def main():
                         
             elif (futre_change["max_chage"] > plus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                # 매수 비중 20% 초과
+                # 매수 비중 10% 초과
                 if (price_variant > 0 and ma_variant > 0) \
-                    and (1 - (position['free'] / (position['total'] + 1)) > 0.2) \
+                    and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
                     and (revenue_rate < DANGER_RATE):
                     # 포지션 종료, 5% 추가 매수
                     print("------------------------------------------------------")
@@ -392,9 +392,9 @@ def main():
                 
             elif (futre_change["max_chage"] < minus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                # 매수 비중 20% 초과
+                # 매수 비중 10% 초과
                 if (price_variant < 0 and ma_variant < 0) \
-                    and (1 - (position['free'] / (position['total'] + 1)) > 0.2) \
+                    and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
                     and (revenue_rate < DANGER_RATE):
                     print("------------------------------------------------------")
                     print("반대 신호가 강해 손절 후 포지션 스위칭")
