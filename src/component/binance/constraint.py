@@ -25,7 +25,7 @@ STOP_LOSS_RATE = 0.5
 DANGER_RATE = -5.0
 
 # 거래량
-TRADE_RATE = 1.0
+TRADE_RATE = 3.0
 
 # 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
 FUTURE_CHANGES_DIR = '/home/ubuntu/auto_crypto_trading/future_changes'
@@ -40,8 +40,8 @@ FUTURE_MIN_LEN = 60  # 1시간
 # Real Revenue
 STOP_PROFIT_RATE = 0.15
 # Revenue
-STOP_REVENUE_PROFIT_RATE = 0.15
-PROFIT_AMOUNT_MULTIPLIER = 2
+STOP_REVENUE_PROFIT_RATE = 0.1
+PROFIT_AMOUNT_MULTIPLIER = 3
 # Exit
 EXIT_PRICE_CHANGE = 80
 

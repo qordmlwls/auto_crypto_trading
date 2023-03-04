@@ -277,17 +277,6 @@ def main():
                 binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, current_price)
                 position["amount"] = position["amount"] + profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-        # 손실만 보고있고 물린 상태이다. 이런 경우 모델이 깨졌을 가능성이 높다. 다시 학습 요청
-        # subprocess.call("""python3 /home/ubuntu/auto_crypto_trading/pipelines/run_pipeline.py --module-name pipelines.auto_trading_model.pipeline --role-arn arn:aws:iam::080366477338:role/service-role/AmazonSageMaker-ExecutionRole-20220914T141823 --tags '[{"Key": "Test", "Value": "Test"}]' --kwargs '{"region": "ap-northeast-2", "role": "arn:aws:iam::080366477338:role/service-role/AmazonSageMaker-ExecutionRole-20220914T141823"}'
-        #         """, shell=True)
-        
-        # # 수익은 별로 없지만 반대방향 신호가 강한 경우
-        # elif leverage_revenu_rate > 0:
-        #     if abs(position["amount"]) < profit_amount:
-        #         profit_amount = abs(position["amount"])
-            
-        #     if position['amount'] > 0 and
-            
                 
 
         # 숏 포지션일 경우
@@ -335,7 +324,7 @@ def main():
                     binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             # 포지션 종료, exit 시그널
-            elif data_list[-1]["close"] - data_list[-3]["close"] > EXIT_PRICE_CHANGE:
+            elif data_list[-1]["close"] - data_list[-3]["close"] > EXIT_PRICE_CHANGE and revenue_rate < DANGER_RATE:
                 print("------------------------------------------------------")
                 print("Exit Sinal이 강해 손절 감수하고 포지션 종료")
                 binance.create_market_order(TARGET_COIN_TICKER, "buy", abs_amt)
@@ -406,7 +395,7 @@ def main():
                     binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)                        
             
             # 포지션 종료, exit 시그널
-            elif data_list[-1]["close"] - data_list[-3]["close"] < -EXIT_PRICE_CHANGE:
+            elif data_list[-1]["close"] - data_list[-3]["close"] < -EXIT_PRICE_CHANGE and revenue_rate < DANGER_RATE:
                 print("------------------------------------------------------")
                 print("Exit Signal이 강해 손절 감수하고 포지션 종료")
                 binance.create_market_order(TARGET_COIN_TICKER, "sell", abs_amt)

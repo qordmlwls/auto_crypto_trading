@@ -1,5 +1,6 @@
 import os
 import subprocess
+import boto3
 
 from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
@@ -14,6 +15,12 @@ from src.component.binance.binance import Binance
 SAGEMAKER_EXECUTION_ROLE = os.environ.get('SAGEMAKER_EXECUTION_ROLE', '')
 
 def main():
+    sagemaker = boto3.client('sagemaker')
+    pipeline_info = sagemaker.list_pipeline_executions(PipelineName='AutotradingTrainPipeline')
+    for pipeline in pipeline_info['PipelineExecutionSummaries']:
+        if pipeline['PipelineExecutionStatus'] == 'Executing':
+            print("Pipeline is already running.")
+            return
     binance = Binance(BINANCE_API_KEY, BINANCE_SECRET_KEY)
     position = binance.position_check(TARGET_COIN_SYMBOL)
     current_price = binance.get_now_price(TARGET_COIN_TICKER)
