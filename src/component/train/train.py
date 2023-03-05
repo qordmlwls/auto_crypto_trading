@@ -6,7 +6,8 @@ from typing import NoReturn, Dict, List, Tuple
 
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
+# from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import RobustScaler
 import joblib
 from pytorch_lightning import LightningModule, Trainer, seed_everything
 from torch.utils.data import DataLoader, Dataset
@@ -201,23 +202,24 @@ class GruTrainer:
         # x = df
         x = df[columns].copy()
         y = df[['close']].copy()
-        scaler_x = MinMaxScaler()
-        scaler_y = MinMaxScaler()
+        # 이상치가 많으므로 RobustScaler 사용
+        scaler_x = RobustScaler()
+        scaler_y = RobustScaler()
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
 
-        # trainset만 스케일링
-        # scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
-        # scaled_train_y = pd.DataFrame(scaler_y.fit_transform(train_y), columns=train_y.columns)
-        
-        # scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
-        # scaled_val_y = pd.DataFrame(scaler_y.transform(val_y), columns=val_y.columns)
-        
-        # volatilty
+        # trainset만 스케일링, volatilty지만 아웃라이어가 많아서 scaling 진행
         scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
-        scaled_train_y = train_y
+        scaled_train_y = pd.DataFrame(scaler_y.fit_transform(train_y), columns=train_y.columns)
         
         scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
-        scaled_val_y = val_y
+        scaled_val_y = pd.DataFrame(scaler_y.transform(val_y), columns=val_y.columns)
+        
+        # volatilty
+        # scaled_train_x = pd.DataFrame(scaler_x.fit_transform(train_x), columns=train_x.columns)
+        # scaled_train_y = train_y
+        
+        # scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
+        # scaled_val_y = val_y
         
         train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
         val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
