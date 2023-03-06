@@ -93,7 +93,9 @@ class GrudModel(LightningModule):
         # many to many
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
         if self.activation_function == 'tanh':
-            out = self.activation_fn(out)
+            # loss inf 발산 문제 해결 위해 추가
+            out = self.layer_norm1(out)
+            out = self.drop_out_layer(self.activation_fn(out))
         else:
             pass
         # to detect saturation effect
