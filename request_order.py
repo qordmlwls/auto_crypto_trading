@@ -40,6 +40,7 @@ def chek_futre_price(res_data: List, future_changes: Dict) -> Tuple[Dict, Dict]:
             future_changes["minus_future_changes"] = future_changes["minus_future_changes"][-FUTURE_MAX_LEN:]
     # chages = [abs(future_price - current_price) for future_price in future_price_list]
     # max_index = np.argmax(chages)    
+    print([i * 100 for i in res_data])
     future_change = {"max_chage": res_data[max_index] * 100, "max_index": max_index}
     return future_change, future_changes
 
@@ -126,7 +127,7 @@ def main():
     
     #음수를 제거한 절대값 수량 ex -0.1 -> 0.1 로 바꿔준다.
     abs_amt = abs(position["amount"])
-    plus_switching_rate = 0.24
+    plus_switching_rate = 0.14
     minus_switching_rate = -0.14
     if res_data:
         global PLUS_FUTURE_PRICE_RATE
