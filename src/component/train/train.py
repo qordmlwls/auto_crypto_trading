@@ -96,7 +96,7 @@ class GrudModel(LightningModule):
             # loss inf 발산 문제 해결 위해 추가
             # out = self.layer_norm1(out)
             # out = self.drop_out_layer(self.activation_fn(out))
-            self.activation_fn(out)
+            out = self.activation_fn(out)
         else:
             pass
         # to detect saturation effect
