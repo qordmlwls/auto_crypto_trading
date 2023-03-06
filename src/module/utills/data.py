@@ -46,8 +46,8 @@ def parallelize_list_to_df(data_list: List, func):
     if len(data_list) < num_cores:
         num_cores = len(data_list)
         # for avoiding os.fork() cannot allocate memory error
-        # num_cores = int(num_cores / 3)
-        num_cores = 1
+        num_cores = int(num_cores / 5)
+        # num_cores = 1
     data_split = np.array_split(data_list, num_cores)
     pool = Pool(num_cores)
     df = pd.concat(pool.map(func, data_split))
