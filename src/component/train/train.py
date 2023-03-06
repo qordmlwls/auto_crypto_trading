@@ -7,7 +7,7 @@ from typing import NoReturn, Dict, List, Tuple
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from sklearn.model_selection import train_test_split
 # from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, MinMaxScaler
 import joblib
 from pytorch_lightning import LightningModule, Trainer, seed_everything
 from torch.utils.data import DataLoader, Dataset
@@ -94,8 +94,9 @@ class GrudModel(LightningModule):
         out = out.reshape(out.shape[0], -1)  # out: (batch_size, seq_length * hidden_size)
         if self.activation_function == 'tanh':
             # loss inf 발산 문제 해결 위해 추가
-            out = self.layer_norm1(out)
-            out = self.drop_out_layer(self.activation_fn(out))
+            # out = self.layer_norm1(out)
+            # out = self.drop_out_layer(self.activation_fn(out))
+            self.activation_fn(out)
         else:
             pass
         # to detect saturation effect
@@ -204,8 +205,8 @@ class GruTrainer:
         # x = df
         x = df[columns].copy()
         y = df[['close']].copy()
-        # 이상치가 많으므로 RobustScaler 사용
-        scaler_x = RobustScaler()
+        # 이상치가 많으므로 RobustScaler 사용, X에는 크기가 많은 값이 많아서 딥러닝 loss가 안줄고 saturation effect 있으므로 MinMaxScaler 사용
+        scaler_x = MinMaxScaler()
         scaler_y = RobustScaler()
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
 
