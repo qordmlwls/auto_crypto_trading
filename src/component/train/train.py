@@ -97,7 +97,11 @@ class GrudModel(LightningModule):
             out = self.layer_norm1(out)
             out = self.drop_out_layer(self.activation_fn(out))
             # out = self.activation_fn(out)
-        else:
+        elif self.activation_function == 'leaky_relu' or self.activation_function == 'relu':
+            out = self.layer_norm1(out)
+            out = self.drop_out_layer(self.activation_fn(out))
+            
+        else:    
             pass
         # to detect saturation effect
         print('out max: ', out.max())
