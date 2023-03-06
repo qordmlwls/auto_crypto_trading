@@ -240,8 +240,8 @@ def get_pipeline(
     step_preprocess = get_preprocessing_step(role,
                                              processing_image_uri,
                                              pipeline_session=pipeline_session,
-                                            #  instance_type="ml.m5.4xlarge"
-                                             instance_type="ml.m4.10xlarge",
+                                             instance_type="ml.m5.4xlarge",
+                                            #  instance_type="ml.m4.10xlarge",
                                              moving_average_window=str(moving_average_window)
                                              )
     training_inputs = {
