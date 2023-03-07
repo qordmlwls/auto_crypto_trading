@@ -126,7 +126,8 @@ def get_train_step(role,
                    moving_average_window,
                    scaler_x,
                    scaler_y,
-                   loss_type):
+                   loss_type,
+                   addtional_layer):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -145,6 +146,7 @@ def get_train_step(role,
             'scaler_x': scaler_x,
             'scaler_y': scaler_y,
             'loss_type': loss_type,
+            'addtional_layer': addtional_layer,
         },
         sagemaker_session=pipeline_session
     )
@@ -218,7 +220,8 @@ def get_pipeline(
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
         activation_function="leaky_relu",
-        moving_average_window=MOVING_AVERAGE_WINDOW):
+        moving_average_window=MOVING_AVERAGE_WINDOW,
+        additional_layer=True):
     """_summary_
 
     Args:
@@ -271,7 +274,8 @@ def get_pipeline(
                                 moving_average_window=str(moving_average_window),
                                 scaler_x=scaler_x,
                                 scaler_y=scaler_y,
-                                loss_type=loss_type
+                                loss_type=loss_type,
+                                additional_layer=str(additional_layer)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,

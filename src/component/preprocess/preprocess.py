@@ -43,8 +43,8 @@ def process_func(data_list: np.ndarray) -> pd.DataFrame:
                 # 결측치 채우기 위해 1분 단위로 데이터 채워넣기 backfill
                 for i in range(diff - 1):
                     df_list.append(price)
-                    if i == 10: # 10분 까지만 backfill
-                        break
+                    # if i == 10: # 10분 까지만 backfill
+                    #     break
             
         # 현 시점 데이터
         df_list.append(price)
