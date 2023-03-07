@@ -63,7 +63,7 @@ class GrudModel(LightningModule):
         elif args['loss_type'] == 'huber':
             self.criterion = nn.SmoothL1Loss()
         elif args['loss_type'] == 'bce':
-            self.criterion = nn.BCELoss()
+            self.criterion = nn.BCEWithLogitsLoss()
         # self.activation_fn = nn.ReLU()
         self.activation_fn = self.activation(self.activation_function)
         
