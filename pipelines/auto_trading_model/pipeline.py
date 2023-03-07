@@ -127,7 +127,8 @@ def get_train_step(role,
                    scaler_x,
                    scaler_y,
                    loss_type,
-                   addtional_layer):
+                   addtional_layer,
+                   learning_rate):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -147,6 +148,7 @@ def get_train_step(role,
             'scaler_y': scaler_y,
             'loss_type': loss_type,
             'addtional_layer': addtional_layer,
+            'learning_rate': learning_rate,
         },
         sagemaker_session=pipeline_session
     )
@@ -212,16 +214,17 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
-        epochs=200,
+        epochs=1000,
         column_limit=50,
         scaler_x='minmax',
         scaler_y='robust',
         loss_type=LOSS_TYPE,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
-        activation_function="leaky_relu",
+        activation_function="gelu",
         moving_average_window=MOVING_AVERAGE_WINDOW,
-        additional_layer=True):
+        addtional_layer=True,
+        learning_rate=0.0001):
     """_summary_
 
     Args:
@@ -275,7 +278,8 @@ def get_pipeline(
                                 scaler_x=scaler_x,
                                 scaler_y=scaler_y,
                                 loss_type=loss_type,
-                                additional_layer=str(additional_layer)
+                                addtional_layer=str(addtional_layer),
+                                learning_rate=str(learning_rate)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,

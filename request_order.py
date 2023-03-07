@@ -291,6 +291,11 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 print("------------------------------------------------------")
+                # position = binance.position_check(TARGET_COIN_SYMBOL)
+                # profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE)
+                # take profit
+                # profit_price = current_price * (1 - STOP_REVENUE_PROFIT_RATE)
+                # binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, profit_price)
                 
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
@@ -332,6 +337,15 @@ def main():
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
+            else:
+                pass
+                # take profit - 하지말자 지정가보다 낮게 내려가면 손해임
+                # print("------------------------------------------------------")
+                # print("Take Profit Setting")
+                # position = binance.position_check(TARGET_COIN_SYMBOL)
+                # profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE)
+                # binance.create_order(TARGET_COIN_TICKER, "buy", one_percent_amount, profit_price)
+            
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
                 
@@ -366,6 +380,9 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+                # take profit
+                
+                # profit_price = current_price * (1 + STOP_REVENUE_PROFIT_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
             elif (futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0) \
@@ -401,6 +418,15 @@ def main():
                 print("Exit Signal이 강해 손절 감수하고 포지션 종료")
                 binance.create_market_order(TARGET_COIN_TICKER, "sell", abs_amt)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            
+            else:
+                pass
+                # take profit
+                # print("------------------------------------------------------")
+                # print("Take Profit Setting")
+                # position = binance.position_check(TARGET_COIN_TICKER)
+                # profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE)
+                # binance.create_order(TARGET_COIN_TICKER, "sell", one_percent_amount, profit_price)
                 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때 (스탑로스는 청산 방지용, 이건 손절용)
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
