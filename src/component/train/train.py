@@ -72,8 +72,10 @@ class GrudModel(LightningModule):
             return nn.LeakyReLU()
         elif activation_function == 'tanh':
             return nn.Tanh()
-        else:
+        elif activation_function == 'relu':
             return nn.ReLU()
+        elif activation_function == 'gelu': 
+            return nn.GELU()
         
     def weight_initialization(self, layer, activation_function):
         if activation_function == 'leaky_relu':
@@ -83,7 +85,7 @@ class GrudModel(LightningModule):
         elif activation_function == 'relu':
             nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
         else:
-            # nn.init.xavier_normal_(layer.weight)
+            nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
             return
             
         

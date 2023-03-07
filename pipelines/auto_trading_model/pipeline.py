@@ -212,12 +212,12 @@ def get_pipeline(
         train_instance_type='ml.g4dn.8xlarge',
         epochs=200,
         column_limit=50,
-        scaler_x='minmax',
+        scaler_x='robust',
         scaler_y='minmax',
         loss_type=LOSS_TYPE,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
-        activation_function="leaky_relu",
+        activation_function="gelu",
         moving_average_window=MOVING_AVERAGE_WINDOW):
     """_summary_
 
