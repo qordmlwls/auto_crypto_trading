@@ -25,7 +25,8 @@ device = get_gpu_device()
 with open(os.path.join(MODEL_DIR, 'hyperparameters.json'), 'r') as f:
     model_config = json.load(f)
 scaler_x = joblib.load(os.path.join(MODEL_DIR, 'scaler_x.pkl'))
-scaler_y = joblib.load(os.path.join(MODEL_DIR, 'scaler_y.pkl'))
+if model_config['scaler_y'] != 'none':
+    scaler_y = joblib.load(os.path.join(MODEL_DIR, 'scaler_y.pkl'))
 
 
 def input_fn(request_body, request_content_type):
@@ -80,9 +81,12 @@ def predict_fn(input_data, model):
     if isinstance(input_data['input_data'], torch.Tensor):
         output = model(input_data['input_data'])
         # volatility지만 outlier가 많아서 스케일링 진행 2023.03.06 add
-        out = scaler_y.inverse_transform(output.cpu().detach().numpy())
+        if model_config['scaler_y'] != 'none':
+            out = scaler_y.inverse_transform(output.cpu().detach().numpy())
         # volatilty
-        # out = output.cpu().detach().numpy()
+        else:
+            out = output.cpu().detach().numpy()
+        
         logger.info('Predition done')
     else:
         raise Exception('Input data is not tensor')

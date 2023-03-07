@@ -275,7 +275,8 @@ class GruTrainer:
             json.dump(self.args, f)
         # save scaler
         joblib.dump(scaler_x, os.path.join(self.args['model_dir'], 'scaler_x.pkl'))
-        joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
+        if scaler_y is not None:
+            joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
         # self.args.update({'device': self.device})
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
