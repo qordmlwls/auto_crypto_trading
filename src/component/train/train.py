@@ -36,6 +36,7 @@ class GrudModel(LightningModule):
         self.sequence_length = args['frame_size']
         self.drop_out = args['drop_out']
         self.activation_function = args['activation_function']
+        self.loss_type = args['loss_type']
         # self.device = args['device']
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
@@ -144,7 +145,7 @@ class GrudModel(LightningModule):
         # y: (batch, output_size(=frame_size))
         x, y = batch['data'], batch['target']
         y_hat = self(x)
-        if self.args['loss_type'] == 'bce':
+        if self.loss_type == 'bce':
             loss = self.criterion(y_hat, y.float())
         else:
             loss = self.criterion(y_hat, y)
