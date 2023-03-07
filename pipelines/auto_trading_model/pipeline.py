@@ -21,7 +21,7 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import (
     ProcessingStep, TrainingStep, CreateModelStep
 )
-from src.component.binance.constraint import MOVING_AVERAGE_WINDOW
+from src.component.binance.constraint import MOVING_AVERAGE_WINDOW, LOSS_TYPE
 
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -210,11 +210,11 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
-        epochs=2000,
+        epochs=200,
         column_limit=50,
         scaler_x='minmax',
-        scaler_y='robust',
-        loss_type='huber',
+        scaler_y='minmax',
+        loss_type=LOSS_TYPE,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
         activation_function="leaky_relu",

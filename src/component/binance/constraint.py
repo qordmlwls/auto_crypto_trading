@@ -54,3 +54,6 @@ LOSS_CRITERIA_RATE = 0.1
 # 재학습
 RETRAIN_SIGNAL_RATE = 0.80
 
+# loss type
+LOSS_TYPE = 'bce'
+

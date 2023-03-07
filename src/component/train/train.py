@@ -62,6 +62,8 @@ class GrudModel(LightningModule):
             self.criterion = nn.L1Loss()
         elif args['loss_type'] == 'huber':
             self.criterion = nn.SmoothL1Loss()
+        elif args['loss_type'] == 'bce':
+            self.criterion = nn.BCELoss()
         # self.activation_fn = nn.ReLU()
         self.activation_fn = self.activation(self.activation_function)
         
@@ -140,7 +142,10 @@ class GrudModel(LightningModule):
         # y: (batch, output_size(=frame_size))
         x, y = batch['data'], batch['target']
         y_hat = self(x)
-        loss = self.criterion(y_hat, y)
+        if self.args['loss_type'] == 'bce':
+            loss = self.criterion(y_hat, y.float())
+        else:
+            loss = self.criterion(y_hat, y)
         # self.log('val_loss', loss)  
         return {'val_loss': loss}
     
@@ -244,7 +249,10 @@ class GruTrainer:
         train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
         val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
         whole_y = pd.concat(train_y)
-        if scaler_y is not None:
+        if self.args['loss_type'] == 'bce': # binary classification
+            train_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in train_y]
+            val_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in val_y]
+        elif scaler_y is not None:
             scaler_y.fit(whole_y)
             train_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in train_y]
             val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in val_y]
