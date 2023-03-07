@@ -56,7 +56,12 @@ class GrudModel(LightningModule):
         # nn.init.kaiming_normal_(self.fc.weight, nonlinearity='leaky_relu')
         self.weight_initialization(self.fc, self.activation_function)
         self.drop_out_layer = nn.Dropout(self.drop_out)
-        self.criterion = nn.MSELoss()
+        if args['loss_type'] == 'mse':
+            self.criterion = nn.MSELoss()
+        elif args['loss_type'] == 'mae':
+            self.criterion = nn.L1Loss()
+        elif args['loss_type'] == 'huber':
+            self.criterion = nn.SmoothL1Loss()
         # self.activation_fn = nn.ReLU()
         self.activation_fn = self.activation(self.activation_function)
         
@@ -209,9 +214,17 @@ class GruTrainer:
         # x = df
         x = df[columns].copy()
         y = df[['close']].copy()
-        # 이상치가 많으므로 RobustScaler 사용, X에는 크기가 많은 값이 많아서 딥러닝 loss가 안줄고 saturation effect 있으므로 MinMaxScaler 사용
-        scaler_x = MinMaxScaler()
-        scaler_y = RobustScaler()
+        # 이상치가 많으므로 RobustScaler 사용 -> 다시 Minmax사용, X에는 크기가 많은 값이 많아서 딥러닝 loss가 안줄고 saturation effect 있으므로 MinMaxScaler 사용
+        if self.args['scaler_x'] == 'minmax':
+            scaler_x = MinMaxScaler()
+        elif self.args['scaler_x'] == 'robust':
+            scaler_x = RobustScaler()
+        if self.args['scaler_y'] == 'minmax':
+            scaler_y = MinMaxScaler()
+        elif self.args['scaler_y'] == 'robust':
+            scaler_y = RobustScaler()
+        else:
+            scaler_y = None
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
         
         # trainset만 스케일링, volatilty지만 아웃라이어가 많아서 scaling 진행
@@ -230,7 +243,13 @@ class GruTrainer:
         
         train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
         val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
-        
+        whole_y = pd.concat(train_y)
+        if scaler_y is not None:
+            scaler_y.fit(whole_y)
+            train_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in train_y]
+            val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in val_y]
+        else:
+            pass
         train_dataset = GrudDataset(train_x, train_y)
         val_dataset = GrudDataset(val_x, val_y)
         self.train_dataloader = DataLoader(train_dataset, 

@@ -80,9 +80,9 @@ def predict_fn(input_data, model):
     if isinstance(input_data['input_data'], torch.Tensor):
         output = model(input_data['input_data'])
         # volatility지만 outlier가 많아서 스케일링 진행 2023.03.06 add
-        # out = scaler_y.inverse_transform(output.cpu().detach().numpy())
+        out = scaler_y.inverse_transform(output.cpu().detach().numpy())
         # volatilty
-        out = output.cpu().detach().numpy()
+        # out = output.cpu().detach().numpy()
         logger.info('Predition done')
     else:
         raise Exception('Input data is not tensor')
