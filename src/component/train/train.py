@@ -328,7 +328,7 @@ class GruTrainer:
                 gpus=-1 if self.device != 'cpu' else None,
                 precision=16 if self.args['fp16'] else 32,
                 accelerator='cuda' if torch.cuda.is_available() else None,  # pytorch-lightning 1.7.6
-                strategy='ddp' if torch.cuda.is_available() else None  # pytorch-lightning 1.7.6
+                strategy='dp' if torch.cuda.is_available() else None  # pytorch-lightning 1.7.6
             )
         elif pl.__version__ == '1.4.9':
             trainer = Trainer(
@@ -341,7 +341,7 @@ class GruTrainer:
                 deterministic=True if self.device != torch.device('cpu') else False,
                 gpus=-1 if self.device != 'cpu' else None,
                 precision=16 if self.args['fp16'] else 32,
-                accelerator='ddp' if torch.cuda.is_available() else None  # pytorch-lightning 1.4.9
+                accelerator='dp' if torch.cuda.is_available() else None  # pytorch-lightning 1.4.9
             )
         else:
             raise Exception("pytorch lightning version should be 1.7.6 or 1.4.9")

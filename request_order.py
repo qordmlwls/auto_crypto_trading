@@ -227,7 +227,7 @@ def main():
         leverage_danger_rate = DANGER_RATE * LEVERAGE
         
         #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
-        global amount
+        # global amount
         amount = one_percent_amount * TRADE_RATE
         profit_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
         if amount < minimun_amount:
@@ -346,14 +346,19 @@ def main():
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
-            else:
+            elif revenue_rate < STOP_REVENUE_PROFIT_RATE: # 손실 방지
                 
                 # take profit - 하지말자 지정가보다 낮게 내려가면 손해임
+                take_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
+                if abs(position["amount"]) < take_amount:
+                    take_amount = abs(position["amount"])
                 print("------------------------------------------------------")
                 print("Take Profit Setting")
                 position = binance.position_check(TARGET_COIN_SYMBOL)
                 profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE / 100)
-                binance.create_order(TARGET_COIN_TICKER, "buy", amount, profit_price)
+                binance.create_order(TARGET_COIN_TICKER, "buy", take_amount, profit_price)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+                
             
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
@@ -435,14 +440,17 @@ def main():
                 binance.create_market_order(TARGET_COIN_TICKER, "sell", abs_amt)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
-            else:
-                amount = one_percent_amount * TRADE_RATE
+            elif revenue_rate < STOP_REVENUE_PROFIT_RATE: # 손실 방지
+                take_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
+                if abs(position["amount"]) < take_amount:
+                    take_amount = abs(position["amount"])
                 # take profit
                 print("------------------------------------------------------")
                 print("Take Profit Setting")
-                position = binance.position_check(TARGET_COIN_TICKER)
+                # position = binance.position_check(TARGET_COIN_TICKER)
                 profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE / 100)
-                binance.create_order(TARGET_COIN_TICKER, "sell", amount, profit_price)
+                binance.create_order(TARGET_COIN_TICKER, "sell", take_amount, profit_price)
+                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때 (스탑로스는 청산 방지용, 이건 손절용)
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
