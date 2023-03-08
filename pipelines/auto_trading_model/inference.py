@@ -35,11 +35,13 @@ def input_fn(request_body, request_content_type):
     data_list = json.loads(request_body)['data_list']
     
     # df = preprocess(data_list)[:model_config['frame_size']]
-    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{model_config['moving_average_window']}"] + [f'bid_{i}' for i in range(model_config['column_limit'])] \
+    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{model_config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(model_config['column_limit'])] \
                 + [f'ask_{i}' for i in range(model_config['column_limit'])] + [f'bid_volume_{i}' for i in range(model_config['column_limit'])] \
                 + [f'ask_volume_{i}' for i in range(model_config['column_limit'])]
     df = pd.DataFrame(data_list)
+    df = get_ma(df, 25)
     df = get_ma(df, model_config['moving_average_window'])[columns].iloc[-model_config['frame_size']:]  
+    
     scaled_x = pd.DataFrame(scaler_x.transform(df), columns=df.columns)
     
     idx_array = np.array([i for i in range(len(df))])

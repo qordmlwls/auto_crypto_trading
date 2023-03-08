@@ -13,7 +13,7 @@ from src.component.binance.constraint import (
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
     FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER,
-    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE, LOSS_CRITERIA_RATE, LOSS_TYPE
+    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE, LOSS_CRITERIA_RATE, LOSS_TYPE, TAKE_PROFIT_MULTIPLIER
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
@@ -233,7 +233,7 @@ def main():
         if amount < minimun_amount:
             amount = minimun_amount
         if profit_amount < minimun_amount:
-            profit_amount = minimun_amount * PROFIT_AMOUNT_MULTIPLIER
+            profit_amount = minimun_amount 
         print("Danger Rate : ", DANGER_RATE,", Real Danger Rate : ", leverage_danger_rate)    
         # if leverage_revenu_rate > STOP_PROFIT_RATE:
         if revenue_rate > STOP_REVENUE_PROFIT_RATE:
@@ -284,6 +284,8 @@ def main():
         # 숏 포지션일 경우
         if position["amount"] < 0 and res_data:
             if futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE:
+                # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                # if ma_variant < 0:
                 # 5% 추가 매도
                 print("------------------------------------------------------")
                 print("Sell", amount, TARGET_COIN_TICKER)
@@ -297,27 +299,31 @@ def main():
                 # take profit
                 # profit_price = current_price * (1 - STOP_REVENUE_PROFIT_RATE)
                 # binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, profit_price)
-                amount = one_percent_amount * TRADE_RATE
-                # take profit
-                print("------------------------------------------------------")
-                print("Take Profit Setting")
-                position = binance.position_check(TARGET_COIN_TICKER)
-                profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE / 100)
-                binance.create_order(TARGET_COIN_TICKER, "buy", amount, profit_price)
+                if revenue_rate < STOP_REVENUE_PROFIT_RATE:
+                    take_amount = one_percent_amount * TRADE_RATE * TAKE_PROFIT_MULTIPLIER
+                    if abs(position["amount"]) < take_amount:
+                        take_amount = abs(position["amount"])
+                    print("------------------------------------------------------")
+                    print("Take Profit Setting")
+                    profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE / 100)
+                    binance.create_order(TARGET_COIN_TICKER, "buy", take_amount, profit_price)
+                
                 
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
             elif (futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0) \
                  or (futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE):
+                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                if ma_variant > 0:
                 # 포지션 종료, 5% 추가 매수
-                print("------------------------------------------------------")
-                print("반대 신호가 강해 포지션 스위칭")
-                print("Buy", amount, TARGET_COIN_TICKER)
-                current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
-                # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
-                print("------------------------------------------------------")
-                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+                    print("------------------------------------------------------")
+                    print("반대 신호가 강해 포지션 스위칭")
+                    print("Buy", amount, TARGET_COIN_TICKER)
+                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
+                    binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
+                    # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
+                    print("------------------------------------------------------")
+                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             # 손절 로직 물림 방지, 반대방향 신호가 강하고 ma, 가격도 반대방향으로 이동중일 경우 + 매수 비중이 20% 이상일 경우, 손실 보고 있을 경우
                         
@@ -349,7 +355,7 @@ def main():
             elif revenue_rate < STOP_REVENUE_PROFIT_RATE: # 손실 방지
                 
                 # take profit - 하지말자 지정가보다 낮게 내려가면 손해임
-                take_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
+                take_amount = one_percent_amount * TRADE_RATE * TAKE_PROFIT_MULTIPLIER
                 if abs(position["amount"]) < take_amount:
                     take_amount = abs(position["amount"])
                 print("------------------------------------------------------")
@@ -384,8 +390,10 @@ def main():
         
         # 롱 포지션일 경우
         elif position["amount"] > 0 and res_data:
-            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE:
-                # 5% 추가 매수
+            # if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE:
+            #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+            if ma_variant > 0:
+            # 5% 추가 매수
                 print("------------------------------------------------------")
                 print("Buy", amount, TARGET_COIN_TICKER)
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
@@ -393,29 +401,35 @@ def main():
                 # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount)
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+                if revenue_rate < STOP_REVENUE_PROFIT_RATE:
                 # take profit
-                amount = one_percent_amount * TRADE_RATE
-                # take profit
-                print("------------------------------------------------------")
-                print("Take Profit Setting")
-                position = binance.position_check(TARGET_COIN_TICKER)
-                profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE / 100)
-                binance.create_order(TARGET_COIN_TICKER, "sell", amount, profit_price)
+                    take_amount = one_percent_amount * TRADE_RATE * TAKE_PROFIT_MULTIPLIER
+                    if abs(position["amount"]) < take_amount:
+                        take_amount = abs(position["amount"])
+                    # take profit
+                    print("------------------------------------------------------")
+                    print("Take Profit Setting")
+                    # position = binance.position_check(TARGET_COIN_TICKER)
+                    profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE / 100)
+                    binance.create_order(TARGET_COIN_TICKER, "sell", take_amount, profit_price)
+                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
                 # profit_price = current_price * (1 + STOP_REVENUE_PROFIT_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
             elif (futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0) \
                  or (futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE):
+                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+                if ma_variant < 0:
                 # 포지션 종료, 5% 추가 매도
-                print("------------------------------------------------------")
-                print("반대 신호가 강해 포지션 스위칭")
-                print("Sell", amount, TARGET_COIN_TICKER)
-                current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
-                # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
-                print("------------------------------------------------------")
-                binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+                    print("------------------------------------------------------")
+                    print("반대 신호가 강해 포지션 스위칭")
+                    print("Sell", amount, TARGET_COIN_TICKER)
+                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
+                    binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
+                    # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
+                    print("------------------------------------------------------")
+                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
             elif (futre_change["max_chage"] < minus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
@@ -440,7 +454,7 @@ def main():
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             elif revenue_rate < STOP_REVENUE_PROFIT_RATE: # 손실 방지
-                take_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
+                take_amount = one_percent_amount * TRADE_RATE * TAKE_PROFIT_MULTIPLIER
                 if abs(position["amount"]) < take_amount:
                     take_amount = abs(position["amount"])
                 # take profit

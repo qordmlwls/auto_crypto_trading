@@ -89,7 +89,11 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df.sort_values(by='datetime', inplace=True)
     
     df.drop('datetime', axis=1, inplace=True)
+    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
+                + [f'ask_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] + [f'bid_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
+                + [f'ask_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)]
     df = get_ma(df, config['moving_average_window'])
+    df = get_ma(df, 25)[columns]
     df.reset_index(drop=True, inplace=True)
     df = df.iloc[config['moving_average_window'] - 1:]
     if len(df) % TIME_WINDOW != 0:
