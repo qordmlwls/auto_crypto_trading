@@ -99,7 +99,7 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df['rsi_d'] = df['diff'].apply(lambda x: abs(x) if x < 0 else 0)
     df['rsi_au'] = df['rsi_u'].rolling(12).mean()
     df['rsi_ad'] = df['rsi_d'].rolling(12).mean()
-    df['rsi'] = df.apply(lambda x: x['rsi_au'] / (x['rsi_au'] + x['rsi_ad']) * 100, axis=1)
+    df['rsi'] = df.apply(lambda x: x['rsi_au'] / (x['rsi_au'] + x['rsi_ad']) * 100 if x['rsi_ad'] != 0 else 0, axis=1)
     df = df.iloc[config['moving_average_window'] - 1:]
 
     df = get_ma(df, config['moving_average_window'])
