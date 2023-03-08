@@ -35,18 +35,10 @@ def input_fn(request_body, request_content_type):
     data_list = json.loads(request_body)['data_list']
     
     # df = preprocess(data_list)[:model_config['frame_size']]
-    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{model_config['moving_average_window']}", "ma_25", "diff", "rsi"] + [f'bid_{i}' for i in range(model_config['column_limit'])] \
+    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{model_config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(model_config['column_limit'])] \
                 + [f'ask_{i}' for i in range(model_config['column_limit'])] + [f'bid_volume_{i}' for i in range(model_config['column_limit'])] \
                 + [f'ask_volume_{i}' for i in range(model_config['column_limit'])]
     df = pd.DataFrame(data_list)
-    
-    df['diff'] = [df.loc[i, 'close'] - df.loc[i - 1, 'close'] if i > 0 else 0 for i in range(len(df))]
-    df['rsi_u'] = df['diff'].apply(lambda x: x if x > 0 else 0)
-    df['rsi_d'] = df['diff'].apply(lambda x: abs(x) if x < 0 else 0)
-    df['rsi_au'] = df['rsi_u'].rolling(12).mean()
-    df['rsi_ad'] = df['rsi_d'].rolling(12).mean()
-    df['rsi'] = df.apply(lambda x: x['rsi_au'] / (x['rsi_au'] + x['rsi_ad']) * 100, axis=1)
-
     df = get_ma(df, 25)
     df = get_ma(df, model_config['moving_average_window'])[columns].iloc[-model_config['frame_size']:]  
     
