@@ -227,6 +227,7 @@ def main():
         leverage_danger_rate = DANGER_RATE * LEVERAGE
         
         #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
+        global amount
         amount = one_percent_amount * TRADE_RATE
         profit_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
         if amount < minimun_amount:
@@ -296,6 +297,13 @@ def main():
                 # take profit
                 # profit_price = current_price * (1 - STOP_REVENUE_PROFIT_RATE)
                 # binance.create_order(TARGET_COIN_TICKER, "buy", profit_amount, profit_price)
+                amount = one_percent_amount * TRADE_RATE
+                # take profit
+                print("------------------------------------------------------")
+                print("Take Profit Setting")
+                position = binance.position_check(TARGET_COIN_TICKER)
+                profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE / 100)
+                binance.create_order(TARGET_COIN_TICKER, "buy", amount, profit_price)
                 
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
@@ -316,9 +324,10 @@ def main():
             elif (futre_change["max_chage"] > plus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과
-                if (price_variant > 0 and ma_variant > 0) \
-                    and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
-                    and (revenue_rate < DANGER_RATE):
+                if (price_variant > 0 and ma_variant > 0):
+                    # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
+                    # and (revenue_rate < DANGER_RATE) \
+                    
                     # 포지션 종료, 5% 추가 매수
                     print("------------------------------------------------------")
                     print("반대 신호가 강해 손절 후 포지션 스위칭")
@@ -338,13 +347,13 @@ def main():
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             else:
-                pass
+                
                 # take profit - 하지말자 지정가보다 낮게 내려가면 손해임
-                # print("------------------------------------------------------")
-                # print("Take Profit Setting")
-                # position = binance.position_check(TARGET_COIN_SYMBOL)
-                # profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE)
-                # binance.create_order(TARGET_COIN_TICKER, "buy", one_percent_amount, profit_price)
+                print("------------------------------------------------------")
+                print("Take Profit Setting")
+                position = binance.position_check(TARGET_COIN_SYMBOL)
+                profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE / 100)
+                binance.create_order(TARGET_COIN_TICKER, "buy", amount, profit_price)
             
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
@@ -381,6 +390,13 @@ def main():
                 print("------------------------------------------------------")
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 # take profit
+                amount = one_percent_amount * TRADE_RATE
+                # take profit
+                print("------------------------------------------------------")
+                print("Take Profit Setting")
+                position = binance.position_check(TARGET_COIN_TICKER)
+                profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE / 100)
+                binance.create_order(TARGET_COIN_TICKER, "sell", amount, profit_price)
                 
                 # profit_price = current_price * (1 + STOP_REVENUE_PROFIT_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
@@ -400,9 +416,9 @@ def main():
             elif (futre_change["max_chage"] < minus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과
-                if (price_variant < 0 and ma_variant < 0) \
-                    and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
-                    and (revenue_rate < DANGER_RATE):
+                if (price_variant < 0 and ma_variant < 0):
+                    # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
+                    # and (revenue_rate < DANGER_RATE):
                     print("------------------------------------------------------")
                     print("반대 신호가 강해 손절 후 포지션 스위칭")
                     print("Sell", amount, TARGET_COIN_TICKER)
@@ -420,13 +436,13 @@ def main():
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             else:
-                pass
+                amount = one_percent_amount * TRADE_RATE
                 # take profit
-                # print("------------------------------------------------------")
-                # print("Take Profit Setting")
-                # position = binance.position_check(TARGET_COIN_TICKER)
-                # profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE)
-                # binance.create_order(TARGET_COIN_TICKER, "sell", one_percent_amount, profit_price)
+                print("------------------------------------------------------")
+                print("Take Profit Setting")
+                position = binance.position_check(TARGET_COIN_TICKER)
+                profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE / 100)
+                binance.create_order(TARGET_COIN_TICKER, "sell", amount, profit_price)
                 
             #내 보유 수량의 절반을 손절한다 단!! 매수 비중이 90% 이상이면서 내 수익율이 손절 마이너스 수익율보다 작을 때 (스탑로스는 청산 방지용, 이건 손절용)
             if revenue_rate <= DANGER_RATE and buy_percent >= 90.0:
