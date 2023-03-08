@@ -341,8 +341,8 @@ def main():
                         
             elif (futre_change["max_chage"] > plus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                # 매수 비중 10% 초과
-                if (price_variant > 0 and ma_variant > 0):
+                # 매수 비중 10% 초과, 조금만 투입헀을 경우 손절
+                if (price_variant > 0 and ma_variant > 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE):
                     # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
                     # and (revenue_rate < DANGER_RATE) \
                     
@@ -446,7 +446,7 @@ def main():
             elif (futre_change["max_chage"] < minus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과
-                if (price_variant < 0 and ma_variant < 0):
+                if (price_variant < 0 and ma_variant < 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE):
                     # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
                     # and (revenue_rate < DANGER_RATE):
                     print("------------------------------------------------------")
