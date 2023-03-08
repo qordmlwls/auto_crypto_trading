@@ -21,7 +21,7 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import (
     ProcessingStep, TrainingStep, CreateModelStep
 )
-from src.component.binance.constraint import MOVING_AVERAGE_WINDOW
+from src.component.binance.constraint import MOVING_AVERAGE_WINDOW, LOSS_TYPE
 
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -123,7 +123,12 @@ def get_train_step(role,
                    epochs,
                    column_limit,
                    activation_function,
-                   moving_average_window):
+                   moving_average_window,
+                   scaler_x,
+                   scaler_y,
+                   loss_type,
+                   addtional_layer,
+                   learning_rate):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -139,6 +144,11 @@ def get_train_step(role,
             'column_limit': column_limit,
             'activation_function': activation_function,
             'moving_average_window': moving_average_window,
+            'scaler_x': scaler_x,
+            'scaler_y': scaler_y,
+            'loss_type': loss_type,
+            'addtional_layer': addtional_layer,
+            'learning_rate': learning_rate,
         },
         sagemaker_session=pipeline_session
     )
@@ -204,12 +214,17 @@ def get_pipeline(
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
         train_instance_type='ml.g4dn.8xlarge',
-        epochs=200,
+        epochs=1000,
         column_limit=50,
+        scaler_x='minmax',
+        scaler_y='robust',
+        loss_type=LOSS_TYPE,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
-        activation_function="leaky_relu",
-        moving_average_window=MOVING_AVERAGE_WINDOW):
+        activation_function="gelu",
+        moving_average_window=MOVING_AVERAGE_WINDOW,
+        addtional_layer=True,
+        learning_rate=0.0001):
     """_summary_
 
     Args:
@@ -259,7 +274,12 @@ def get_pipeline(
                                 epochs=str(epochs),
                                 column_limit=str(column_limit),
                                 activation_function=activation_function,
-                                moving_average_window=str(moving_average_window)
+                                moving_average_window=str(moving_average_window),
+                                scaler_x=scaler_x,
+                                scaler_y=scaler_y,
+                                loss_type=loss_type,
+                                addtional_layer=str(addtional_layer),
+                                learning_rate=str(learning_rate)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,

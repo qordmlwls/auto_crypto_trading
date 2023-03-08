@@ -38,6 +38,10 @@ if __name__ == '__main__':
     parser.add_argument('--column_limit', type=int, default=COLUMN_LIMIT, help='column limit for bid and ask')
     parser.add_argument('--activation_function', type=str, default='none', help='activation function')
     parser.add_argument('--moving_average_window', type=int, default=100, help='moving average window')
+    parser.add_argument('--loss_type', type=str, default='huber', help='loss type')
+    parser.add_argument('--scaler_x', type=str, default='minmax', help='scaler for x')
+    parser.add_argument('--scaler_y', type=str, default='robust', help='scaler for y')
+    parser.add_argument('--addtional_layer', type=bool, default=False, help='addtional layer')
     parameters = parser.parse_args()
     model_config = parameters.__dict__
     

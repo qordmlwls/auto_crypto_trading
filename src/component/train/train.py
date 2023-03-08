@@ -36,6 +36,8 @@ class GrudModel(LightningModule):
         self.sequence_length = args['frame_size']
         self.drop_out = args['drop_out']
         self.activation_function = args['activation_function']
+        self.loss_type = args['loss_type']
+        self.addtional_layer = args['addtional_layer']
         # self.device = args['device']
 
         self.gru = nn.GRU(self.input_size, self.hidden_size, self.num_layers, 
@@ -56,7 +58,14 @@ class GrudModel(LightningModule):
         # nn.init.kaiming_normal_(self.fc.weight, nonlinearity='leaky_relu')
         self.weight_initialization(self.fc, self.activation_function)
         self.drop_out_layer = nn.Dropout(self.drop_out)
-        self.criterion = nn.MSELoss()
+        if args['loss_type'] == 'mse':
+            self.criterion = nn.MSELoss()
+        elif args['loss_type'] == 'mae':
+            self.criterion = nn.L1Loss()
+        elif args['loss_type'] == 'huber':
+            self.criterion = nn.SmoothL1Loss()
+        elif args['loss_type'] == 'bce':
+            self.criterion = nn.BCEWithLogitsLoss()
         # self.activation_fn = nn.ReLU()
         self.activation_fn = self.activation(self.activation_function)
         
@@ -65,8 +74,10 @@ class GrudModel(LightningModule):
             return nn.LeakyReLU()
         elif activation_function == 'tanh':
             return nn.Tanh()
-        else:
+        elif activation_function == 'relu':
             return nn.ReLU()
+        elif activation_function == 'gelu': 
+            return nn.GELU()
         
     def weight_initialization(self, layer, activation_function):
         if activation_function == 'leaky_relu':
@@ -76,7 +87,7 @@ class GrudModel(LightningModule):
         elif activation_function == 'relu':
             nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
         else:
-            # nn.init.xavier_normal_(layer.weight)
+            nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
             return
             
         
@@ -110,9 +121,10 @@ class GrudModel(LightningModule):
         # out = self.drop_out_layer(self.activation_fn(out))
         # out = self.drop_out_layer(self.activation_fn(self.intermediate(out)))
         # out = self.drop_out_layer(self.activation_fn(self.intermediate2(out)))
-        # out = self.drop_out_layer(self.activation_fn(self.layer_norm1(out)))
-        # out = self.drop_out_layer(self.activation_fn(self.layer_norm2(self.intermediate(out))))
-        # out = self.drop_out_layer(self.activation_fn(self.layer_norm3(self.intermediate2(out))))
+        if self.addtional_layer:
+            out = self.drop_out_layer(self.activation_fn(self.layer_norm1(out)))
+            out = self.drop_out_layer(self.activation_fn(self.layer_norm2(self.intermediate(out))))
+            out = self.drop_out_layer(self.activation_fn(self.layer_norm3(self.intermediate2(out))))
         # out = F.relu(self.layer_norm(out))
         out = self.fc(out)  # out: (batch_size, output_size)
         return out
@@ -135,7 +147,10 @@ class GrudModel(LightningModule):
         # y: (batch, output_size(=frame_size))
         x, y = batch['data'], batch['target']
         y_hat = self(x)
-        loss = self.criterion(y_hat, y)
+        if self.loss_type == 'bce':
+            loss = self.criterion(y_hat, y.float())
+        else:
+            loss = self.criterion(y_hat, y)
         # self.log('val_loss', loss)  
         return {'val_loss': loss}
     
@@ -209,9 +224,17 @@ class GruTrainer:
         # x = df
         x = df[columns].copy()
         y = df[['close']].copy()
-        # 이상치가 많으므로 RobustScaler 사용, X에는 크기가 많은 값이 많아서 딥러닝 loss가 안줄고 saturation effect 있으므로 MinMaxScaler 사용
-        scaler_x = MinMaxScaler()
-        scaler_y = RobustScaler()
+        # 이상치가 많으므로 RobustScaler 사용 -> 다시 Minmax사용, X에는 크기가 많은 값이 많아서 딥러닝 loss가 안줄고 saturation effect 있으므로 MinMaxScaler 사용
+        if self.args['scaler_x'] == 'minmax':
+            scaler_x = MinMaxScaler()
+        elif self.args['scaler_x'] == 'robust':
+            scaler_x = RobustScaler()
+        if self.args['scaler_y'] == 'minmax':
+            scaler_y = MinMaxScaler()
+        elif self.args['scaler_y'] == 'robust':
+            scaler_y = RobustScaler()
+        else:
+            scaler_y = None
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
         
         # trainset만 스케일링, volatilty지만 아웃라이어가 많아서 scaling 진행
@@ -230,7 +253,16 @@ class GruTrainer:
         
         train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
         val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
-        
+        whole_y = pd.concat(train_y)
+        if self.args['loss_type'] == 'bce': # binary classification
+            train_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in train_y]
+            val_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in val_y]
+        elif scaler_y is not None:
+            scaler_y.fit(whole_y)
+            train_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in train_y]
+            val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in val_y]
+        else:
+            pass
         train_dataset = GrudDataset(train_x, train_y)
         val_dataset = GrudDataset(val_x, val_y)
         self.train_dataloader = DataLoader(train_dataset, 
@@ -256,7 +288,8 @@ class GruTrainer:
             json.dump(self.args, f)
         # save scaler
         joblib.dump(scaler_x, os.path.join(self.args['model_dir'], 'scaler_x.pkl'))
-        joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
+        if scaler_y is not None:
+            joblib.dump(scaler_y, os.path.join(self.args['model_dir'], 'scaler_y.pkl'))
         # self.args.update({'device': self.device})
         # with open('scaler.pkl', 'wb') as f:
         #     pickle.dump(scaler, f)
