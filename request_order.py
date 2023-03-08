@@ -354,7 +354,6 @@ def main():
                     take_amount = abs(position["amount"])
                 print("------------------------------------------------------")
                 print("Take Profit Setting")
-                position = binance.position_check(TARGET_COIN_SYMBOL)
                 profit_price = position['entry_price'] * (1 - STOP_REVENUE_PROFIT_RATE / 100)
                 binance.create_order(TARGET_COIN_TICKER, "buy", take_amount, profit_price)
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)

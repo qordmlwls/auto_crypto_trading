@@ -213,7 +213,7 @@ def get_pipeline(
         role=None,
         default_bucket=None,
         pipeline_name="AutotradingTrainPipeline",
-        train_instance_type='ml.g4dn.12xlarge',
+        train_instance_type='ml.g4dn.8xlarge',
         epochs=1000,
         column_limit=50,
         scaler_x='minmax',
