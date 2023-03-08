@@ -240,6 +240,12 @@ def main():
             if abs(position["amount"]) < profit_amount:
                 profit_amount = abs(position["amount"])
             if position["amount"] > 0:
+                if res_data:
+                    if futre_change['max_chage'] < 0:
+                        # 떨어질 것 같으면 더 판다
+                        profit_amount = profit_amount * 3.0
+                        if abs(position["amount"]) < profit_amount:
+                            profit_amount = abs(position["amount"])
                 # 5% 매도
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도")
@@ -249,6 +255,12 @@ def main():
                 position["amount"] = position["amount"] - profit_amount
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position["amount"] < 0:
+                if res_data:
+                    if futre_change['max_chage'] > 0:
+                        # 오를 것 같으면 더 산다
+                        profit_amount = profit_amount * 3.0
+                        if abs(position["amount"]) < profit_amount:
+                            profit_amount = abs(position["amount"])
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수")
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
@@ -390,9 +402,9 @@ def main():
         
         # 롱 포지션일 경우
         elif position["amount"] > 0 and res_data:
-            # if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE:
+            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE:
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-            if ma_variant > 0:
+            # if ma_variant > 0:
             # 5% 추가 매수
                 print("------------------------------------------------------")
                 print("Buy", amount, TARGET_COIN_TICKER)
@@ -413,7 +425,7 @@ def main():
                     profit_price = position['entry_price'] * (1 + STOP_REVENUE_PROFIT_RATE / 100)
                     binance.create_order(TARGET_COIN_TICKER, "sell", take_amount, profit_price)
                     binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-                
+            
                 # profit_price = current_price * (1 + STOP_REVENUE_PROFIT_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우

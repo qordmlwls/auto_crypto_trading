@@ -218,7 +218,7 @@ class GruTrainer:
         
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
         
-        columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{self.args['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(self.args['column_limit'])] \
+        columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{self.args['moving_average_window']}", "ma_25", "diff", "rsi"] + [f'bid_{i}' for i in range(self.args['column_limit'])] \
                     + [f'ask_{i}' for i in range(self.args['column_limit'])] + [f'bid_volume_{i}' for i in range(self.args['column_limit'])] \
                     + [f'ask_volume_{i}' for i in range(self.args['column_limit'])]
         # x = df
