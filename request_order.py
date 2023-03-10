@@ -50,8 +50,22 @@ def get_price_ma_variant(data_list: List, window: int) -> Tuple[float, float]:
                 + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
     df = pd.DataFrame(data_list)
     df = get_ma(df, window)[columns]
-    price_variant = df["close"].iloc[-1] - df["close"].iloc[-window] 
-    ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-window]
+    # price_variant = df["close"].iloc[-1] - df["close"].iloc[-window] 
+    price_variant = df["close"].iloc[-1] - df["close"].iloc[-15] 
+    # ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-window]
+    ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-15]
+    return price_variant, ma_vaiant
+
+def get_price_ma_variant_with_index(data_list: List, window: int, index: int) -> Tuple[float, float]:
+    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{window}"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+                + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
+                + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
+    df = pd.DataFrame(data_list)
+    df = get_ma(df, window)[columns]
+    # price_variant = df["close"].iloc[-1] - df["close"].iloc[-window] 
+    price_variant = df["close"].iloc[-1] - df["close"].iloc[-index] 
+    # ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-window]
+    ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-index]
     return price_variant, ma_vaiant
 
 def main():
@@ -104,6 +118,9 @@ def main():
     variance = CURRENT_VARIANCE
     future_diff = [abs(res_data[i]) * 100 for i in range(0, len(res_data))]
     future_variance = np.mean(future_diff)
+    # _, ma_100_variant = get_price_ma_variant(data_list, 100)
+    _, ma_100_variant = get_price_ma_variant_with_index(data_list, 100, 2)
+    print("ma_100_variant", ma_100_variant)
     # scaling
     res_data = [res_data[i] * (1 + variance / future_variance) for i in range(0, len(res_data))]
     
@@ -113,7 +130,7 @@ def main():
     
     #첫 매수 비중을 구한다.. 여기서는 5%! 
     # * 20.0 을 하면 20%가 되겠죠? 마음껏 조절하세요!
-    first_amount = one_percent_amount * TRADE_RATE
+    first_amount = one_percent_amount * TRADE_RATE * 2
 
     # 비트코인의 경우 0.001로 그보다 작은 수량으로 주문을 넣으면 오류가 납니다.!
     #최소 주문 수량을 가져온다 
@@ -178,11 +195,11 @@ def main():
         print("minus switching price change", minus_switching_rate, "%")
     else:
         pass
-        
+    
     #0이면 포지션 잡기전
     if abs_amt == 0 and res_data:
         
-        if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE:
+        if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1: # 추세 추종, 추세 꺾일때 진입 방지
             print("------------------------------------------------------")
             print("Buy", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
@@ -191,7 +208,7 @@ def main():
             binance.create_order(TARGET_COIN_TICKER, "buy", first_amount, current_price)
             # binance.create_market_order(TARGET_COIN_TICKER, "buy", first_amount)
             binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-        elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE:
+        elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
@@ -228,7 +245,7 @@ def main():
         
         #@TODO: 목표 future_change, 추가매수, 첫구매 비율 공통상수로 빼기
         # global amount
-        amount = one_percent_amount * TRADE_RATE
+        amount = one_percent_amount * TRADE_RATE  * 2
         profit_amount = one_percent_amount * TRADE_RATE * PROFIT_AMOUNT_MULTIPLIER
         if amount < minimun_amount:
             amount = minimun_amount
@@ -295,7 +312,7 @@ def main():
 
         # 숏 포지션일 경우
         if position["amount"] < 0 and res_data:
-            if futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE:
+            if futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1:
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
                 # 5% 추가 매도
@@ -324,7 +341,7 @@ def main():
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
             elif (futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0) \
-                 or (futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE):
+                 or (futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE): # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 if ma_variant > 0:
                 # 포지션 종료, 5% 추가 매수
@@ -342,7 +359,7 @@ def main():
             elif (futre_change["max_chage"] > plus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과, 조금만 투입헀을 경우 손절
-                if (price_variant > 0 and ma_variant > 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE):
+                if (price_variant > 0 and ma_variant > 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
                     # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
                     # and (revenue_rate < DANGER_RATE) \
                     
@@ -402,7 +419,7 @@ def main():
         
         # 롱 포지션일 경우
         elif position["amount"] > 0 and res_data:
-            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE:
+            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1:
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:
             # 5% 추가 매수
@@ -430,7 +447,7 @@ def main():
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
             elif (futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0) \
-                 or (futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE):
+                 or (futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE): # and ma_100_variant < 0 and abs(ma_100_variant) > 8:
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 if ma_variant < 0:
                 # 포지션 종료, 5% 추가 매도
@@ -446,7 +463,7 @@ def main():
             elif (futre_change["max_chage"] < minus_switching_rate):
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과
-                if (price_variant < 0 and ma_variant < 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE):
+                if (price_variant < 0 and ma_variant < 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant < 0 and abs(ma_100_variant) > 8:
                     # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
                     # and (revenue_rate < DANGER_RATE):
                     print("------------------------------------------------------")
