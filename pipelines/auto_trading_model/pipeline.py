@@ -83,7 +83,8 @@ def get_preprocessing_step(role,
                            image_uri,
                            instance_type,
                            pipeline_session,
-                           moving_average_window,):
+                           moving_average_window,
+                           data_minute_limit,):
     processor = Processor(
         entrypoint=['python3', 'code/pipelines/auto_trading_model/preprocess.py'],
         image_uri=image_uri,
@@ -98,6 +99,7 @@ def get_preprocessing_step(role,
         processor=processor,
         job_arguments=[
             "--moving_average_window", moving_average_window,
+            "--data_minute_limit", data_minute_limit,
         ],
         inputs=[
             ProcessingInput(
@@ -227,7 +229,8 @@ def get_pipeline(
         moving_average_window=MOVING_AVERAGE_WINDOW,
         addtional_layer=True,
         learning_rate=0.0001,
-        patience=100):
+        patience=100,
+        data_minute_limit=43200):
     """_summary_
 
     Args:
@@ -260,7 +263,8 @@ def get_pipeline(
                                              pipeline_session=pipeline_session,
                                              instance_type="ml.m4.16xlarge",
                                             #  instance_type="ml.m4.10xlarge",
-                                             moving_average_window=str(moving_average_window)
+                                             moving_average_window=str(moving_average_window),
+                                             data_minute_limit=str(data_minute_limit)
                                              )
     training_inputs = {
         "crypto_data": TrainingInput(

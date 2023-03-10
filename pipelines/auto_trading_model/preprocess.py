@@ -61,6 +61,7 @@ def main(config: Dict):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--moving_average_window', type=int, default=100)
+    parser.add_argument('--data_minute_limit', type=int, default=43200, help='minute data limit, default is 30 days')
     parameters = parser.parse_args()
     config = parameters.__dict__
     main(config)

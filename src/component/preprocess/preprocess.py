@@ -25,6 +25,8 @@ def process_func(data_list: np.ndarray) -> pd.DataFrame:
         
         price = pd.DataFrame(zip([data['ticker']['open']], [data['ticker']['high']], [data['ticker']['low']],
                                     [data['ticker']['close']], [data['ticker']['baseVolume']], [data['ticker']['datetime']]), columns=['open', 'high', 'low', 'close', 'volume', 'datetime'])
+        # minite
+        price['datetime'] = price['datetime'].apply(lambda x: int(x.split(':')[1]))
         for i in range(ORDER_BOOK_RANK_SIZE):
             price[f'bid_{i}'] = bids[i][0]
             price[f'bid_volume_{i}'] = bids[i][1]
@@ -88,14 +90,22 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df = parallelize_list_to_df(data_list, process_func)
     df.sort_values(by='datetime', inplace=True)
     
-    df.drop('datetime', axis=1, inplace=True)
-    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
+    # df.drop('datetime', axis=1, inplace=True)
+    
+    # columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
+    #             + [f'ask_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] + [f'bid_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
+    #             + [f'ask_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)]
+    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "datetime"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
                 + [f'ask_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] + [f'bid_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
                 + [f'ask_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)]
     df = get_ma(df, config['moving_average_window'])
     df = get_ma(df, 25)[columns]
     df.reset_index(drop=True, inplace=True)
+    
     df = df.iloc[config['moving_average_window'] - 1:]
+    # month limit
+    df = df.iloc[-config['data_minute_limit']:]
+    
     if len(df) % TIME_WINDOW != 0:
         df = df.iloc[(len(df) % TIME_WINDOW):]
     return df
