@@ -21,6 +21,7 @@ import pandas as pd
 
 from src.module.utills.data import prepare_batch
 from src.module.utills.gpu import get_gpu_device
+from src.component.binance.constraint import COLUMNS
 
 
 class GrudModel(LightningModule):
@@ -218,11 +219,12 @@ class GruTrainer:
         
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
         
-        columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{self.args['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(self.args['column_limit'])] \
-                    + [f'ask_{i}' for i in range(self.args['column_limit'])] + [f'bid_volume_{i}' for i in range(self.args['column_limit'])] \
-                    + [f'ask_volume_{i}' for i in range(self.args['column_limit'])]
+        # columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{self.args['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(self.args['column_limit'])] \
+        #             + [f'ask_{i}' for i in range(self.args['column_limit'])] + [f'bid_volume_{i}' for i in range(self.args['column_limit'])] \
+        #             + [f'ask_volume_{i}' for i in range(self.args['column_limit'])]
         # x = df
-        x = df[columns].copy()
+        # x = df[columns].copy()
+        x = df[COLUMNS].copy()
         y = df[['close']].copy()
         # 이상치가 많으므로 RobustScaler 사용 -> 다시 Minmax사용, X에는 크기가 많은 값이 많아서 딥러닝 loss가 안줄고 saturation effect 있으므로 MinMaxScaler 사용
         if self.args['scaler_x'] == 'minmax':

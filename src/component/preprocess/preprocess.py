@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-from src.component.binance.constraint import TIME_WINDOW
+from src.component.binance.constraint import TIME_WINDOW, COLUMN_LIMIT, COLUMNS
 from src.module.utills.data import parallelize_list_to_df, get_ma
 
 from warnings import simplefilter
@@ -95,11 +95,11 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     # columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
     #             + [f'ask_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] + [f'bid_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
     #             + [f'ask_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)]
-    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "datetime"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
-                + [f'ask_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] + [f'bid_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
-                + [f'ask_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)]
+    # columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "datetime"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+    #             + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
+    #             + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
     df = get_ma(df, config['moving_average_window'])
-    df = get_ma(df, 25)[columns]
+    df = get_ma(df, 25)[COLUMNS]
     df.reset_index(drop=True, inplace=True)
     
     df = df.iloc[config['moving_average_window'] - 1:]

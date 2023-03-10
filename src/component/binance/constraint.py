@@ -12,6 +12,10 @@ TIME_WINDOW = 15
 MOVING_AVERAGE_WINDOW = 100
 COLUMN_LIMIT = 100
 
+COLUMNS = ['open', 'high', 'low', 'close', 'volume', f"ma_{MOVING_AVERAGE_WINDOW}", "datetime"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+            + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
+            + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
+
 LEVERAGE = 3  # 레버리지 많이 하면 세금 많이 내야함
 #아래는 타겟 수익율로 마음껏 조절하세요
 #타겟 레이트 0.001 
