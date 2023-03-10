@@ -12,7 +12,7 @@ TIME_WINDOW = 15
 MOVING_AVERAGE_WINDOW = 100
 COLUMN_LIMIT = 100
 
-COLUMNS = ['open', 'high', 'low', 'close', 'volume', f"ma_{MOVING_AVERAGE_WINDOW}", "datetime"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+COLUMNS = ['open', 'high', 'low', 'close', 'volume', f"ma_{MOVING_AVERAGE_WINDOW}"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
             + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
             + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
 

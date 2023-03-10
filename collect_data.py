@@ -52,6 +52,7 @@ def main():
         'low': ticker['low'],
         'close': ticker['close'],
         'volume': ticker['baseVolume'],
+        'datatime': ticker['datetime'].split(':')[1]
     }
     bids = sorted(order_book['bids'], key=lambda x: x[1], reverse=True)[:ORDER_BOOK_RANK_SIZE]
     asks = sorted(order_book['asks'], key=lambda x: x[1], reverse=True)[:ORDER_BOOK_RANK_SIZE]
