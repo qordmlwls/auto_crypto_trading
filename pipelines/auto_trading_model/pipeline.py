@@ -21,7 +21,7 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import (
     ProcessingStep, TrainingStep, CreateModelStep
 )
-from src.component.binance.constraint import MOVING_AVERAGE_WINDOW, LOSS_TYPE
+from src.component.binance.constraint import MOVING_AVERAGE_WINDOW, LOSS_TYPE, TIME_WINDOW
 
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -124,6 +124,7 @@ def get_train_step(role,
                    column_limit,
                    activation_function,
                    moving_average_window,
+                   frame_size,
                    scaler_x,
                    scaler_y,
                    loss_type,
@@ -151,6 +152,7 @@ def get_train_step(role,
             'addtional_layer': addtional_layer,
             'learning_rate': learning_rate,
             'patience': patience,
+            'frame_size': frame_size,
         },
         sagemaker_session=pipeline_session
     )
@@ -225,6 +227,7 @@ def get_pipeline(
         endpoint_instance_count=1,
         activation_function="gelu",
         moving_average_window=MOVING_AVERAGE_WINDOW,
+        frame_size=TIME_WINDOW,
         addtional_layer=True,
         learning_rate=0.0001,
         patience=100):
@@ -278,6 +281,7 @@ def get_pipeline(
                                 column_limit=str(column_limit),
                                 activation_function=activation_function,
                                 moving_average_window=str(moving_average_window),
+                                frame_size=str(frame_size),
                                 scaler_x=scaler_x,
                                 scaler_y=scaler_y,
                                 loss_type=loss_type,

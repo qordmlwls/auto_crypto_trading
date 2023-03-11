@@ -6,6 +6,7 @@ import boto3
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime
 
 from src.component.binance.constraint import (
     TIME_WINDOW, BINANCE_API_KEY, BINANCE_SECRET_KEY, 
@@ -75,6 +76,11 @@ def main():
     binance.set_leverage(TARGET_COIN_SYMBOL, LEVERAGE)
     position = binance.position_check(TARGET_COIN_SYMBOL)
     future_changes = json.load(open(os.path.join(FUTURE_CHANGES_DIR, "future_changes.json"), "r"))
+    now_minute = datetime.now().minute
+    around_per_30 = abs(now_minute - 30) <= 10
+    around_per_60 = abs(now_minute - 60) <= 10
+    around_per_30_5 = abs(now_minute - 30) <= 5
+    around_per_60_5 = abs(now_minute - 60) <= 5
     #시장가 taker 0.04, 지정가 maker 0.02 -> 시장가가 수수료가 더 비싸다.
 
     #시장가 숏 포지션 잡기 
@@ -197,7 +203,7 @@ def main():
         pass
     
     #0이면 포지션 잡기전
-    if abs_amt == 0 and res_data:
+    if abs_amt == 0 and res_data and (not around_per_30_5 or not around_per_60_5):  
         
         if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1: # 추세 추종, 추세 꺾일때 진입 방지
             print("------------------------------------------------------")
@@ -258,11 +264,14 @@ def main():
                 profit_amount = abs(position["amount"])
             if position["amount"] > 0:
                 if res_data:
-                    if futre_change['max_chage'] < 0:
-                        # 떨어질 것 같으면 더 판다
-                        profit_amount = profit_amount * 3.0
-                        if abs(position["amount"]) < profit_amount:
-                            profit_amount = abs(position["amount"])
+                    if futre_change['max_chage'] < 0: 
+                        # 오를 것 같으면 포지션 종료 (손실 방지)
+                        if around_per_30 or around_per_60: # 30분, 60분 추세가 반대로 바뀔 것 같으면
+                            profit_amount = abs_amt
+                        else:
+                            profit_amount = profit_amount * 3.0
+                            if abs(position["amount"]) < profit_amount:
+                                profit_amount = abs(position["amount"])
                 # 5% 매도
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도")
@@ -273,11 +282,14 @@ def main():
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             elif position["amount"] < 0:
                 if res_data:
-                    if futre_change['max_chage'] > 0:
-                        # 오를 것 같으면 더 산다
-                        profit_amount = profit_amount * 3.0
-                        if abs(position["amount"]) < profit_amount:
-                            profit_amount = abs(position["amount"])
+                    if futre_change['max_chage'] > 0 and (around_per_30 or around_per_60):
+                        if around_per_30 or around_per_60: # 30분, 60분 추세가 반대로 바뀔 것 같으면
+                            # 오를 것 같으면 포지션 종료 (손실 방지), 이미 많이 떨어지고 이
+                            profit_amount = abs_amt
+                        else:
+                            profit_amount = profit_amount * 3.0
+                            if abs(position["amount"]) < profit_amount:
+                                profit_amount = abs(position["amount"])
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수")
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
@@ -313,6 +325,7 @@ def main():
         # 숏 포지션일 경우
         if position["amount"] < 0 and res_data:
             if futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1:
+                # and (not around_per_30_5 or not around_per_60_5):
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
                 # 5% 추가 매도
@@ -419,7 +432,8 @@ def main():
         
         # 롱 포지션일 경우
         elif position["amount"] > 0 and res_data:
-            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1:
+            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1 \
+            and (not around_per_30_5 or not around_per_60_5):
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:
             # 5% 추가 매수

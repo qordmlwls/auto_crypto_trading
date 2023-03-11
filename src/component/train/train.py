@@ -29,7 +29,8 @@ class GrudModel(LightningModule):
         self.input_size = args['input_size']
         # self.input_size = input_size
         self.hidden_size = args['hidden_size']
-        self.output_size = args['frame_size']  # next step의 모든 close price를 예측
+        # self.output_size = args['frame_size']  # next step의 모든 close price를 예측
+        self.output_size = args['output_size']
         self.num_layers = args['num_layers']
         self.batch_size = args['batch_size']
         self.learning_rate = args['learning_rate']
@@ -133,6 +134,7 @@ class GrudModel(LightningModule):
         # x: (batch, seq_len, input_size)
         # y: (batch, output_size(=frame_size))
         x, y = batch['data'], batch['target'].float()
+        y = y[:, :self.output_size]
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
         # self.log('train_loss', loss)
