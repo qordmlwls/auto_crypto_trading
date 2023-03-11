@@ -215,7 +215,29 @@ class GruTrainer:
             data_y.append(volatility)
             
         return data_x, data_y
+    
+    def _build_sequence_x(self, train: DataFrame) -> List:
+        data_x = []
         
+        # x는 맨 마지막 step을 제외하고, y는 맨 첫번째 step을 제외하고
+        for i in range(len(train) - 2 * self.args['frame_size']):
+            _x = train[i: i + self.args['frame_size']]
+            data_x.append(_x)
+            
+        return data_x
+    
+    def _build_sequence_y(self, test: DataFrame) -> List:
+        data_y = []
+        
+        for j in range(self.args['frame_size'], len(test) - self.args['frame_size']):
+            _y = test[j: j + self.args['frame_size']]
+            # volatilty
+            volatility = (_y - test[j-1: j]['close'].values[0]) / test[j-1: j]['close'].values[0]
+            # data_y.append(_y)
+            data_y.append(volatility)
+        
+        return data_y
+    
     def _prepare_dataset(self, df: DataFrame) -> NoReturn:
         
         columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{self.args['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(self.args['column_limit'])] \
@@ -251,8 +273,11 @@ class GruTrainer:
         scaled_val_x = pd.DataFrame(scaler_x.transform(val_x), columns=val_x.columns)
         scaled_val_y = val_y
         
-        train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
-        val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
+        # train_x, train_y = self._build_sequence(scaled_train_x, scaled_train_y)
+        # val_x, val_y = self._build_sequence(scaled_val_x, scaled_val_y)
+        train_y = self._build_sequence_y(scaled_train_y)
+        val_y = self._build_sequence_y(scaled_val_y)
+        
         whole_y = pd.concat(train_y)
         if self.args['loss_type'] == 'bce': # binary classification
             train_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in train_y]
@@ -263,6 +288,10 @@ class GruTrainer:
             val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in val_y]
         else:
             pass
+        
+        train_x = self._build_sequence_x(scaled_train_x)
+        val_x = self._build_sequence_x(scaled_val_x)
+        
         train_dataset = GrudDataset(train_x, train_y)
         val_dataset = GrudDataset(val_x, val_y)
         self.train_dataloader = DataLoader(train_dataset, 
