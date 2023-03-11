@@ -96,6 +96,7 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df = get_ma(df, 25)[columns]
     df.reset_index(drop=True, inplace=True)
     df = df.iloc[config['moving_average_window'] - 1:]
+    df = df.iloc[-43200:]
     if len(df) % TIME_WINDOW != 0:
         df = df.iloc[(len(df) % TIME_WINDOW):]
     return df
