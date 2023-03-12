@@ -21,7 +21,8 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 from sagemaker.workflow.steps import (
     ProcessingStep, TrainingStep, CreateModelStep
 )
-from src.component.binance.constraint import MOVING_AVERAGE_WINDOW, LOSS_TYPE, TIME_WINDOW, PREDICTION_OUTPUT_SIZE
+from src.component.binance.constraint import (MOVING_AVERAGE_WINDOW, LOSS_TYPE, TIME_WINDOW, 
+                                              PREDICTION_OUTPUT_SIZE, TIME_MINUTE_LIMIT)
 
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -83,7 +84,8 @@ def get_preprocessing_step(role,
                            image_uri,
                            instance_type,
                            pipeline_session,
-                           moving_average_window,):
+                           moving_average_window,
+                           time_minute_limit):
     processor = Processor(
         entrypoint=['python3', 'code/pipelines/auto_trading_model/preprocess.py'],
         image_uri=image_uri,
@@ -98,6 +100,7 @@ def get_preprocessing_step(role,
         processor=processor,
         job_arguments=[
             "--moving_average_window", moving_average_window,
+            "--time_minute_limit", time_minute_limit,
         ],
         inputs=[
             ProcessingInput(
@@ -233,7 +236,8 @@ def get_pipeline(
         output_size=PREDICTION_OUTPUT_SIZE,
         addtional_layer=True,
         learning_rate=0.0001,
-        patience=100):
+        patience=100,
+        time_minute_limit=TIME_MINUTE_LIMIT):
     """_summary_
 
     Args:
@@ -266,7 +270,8 @@ def get_pipeline(
                                              pipeline_session=pipeline_session,
                                              instance_type="ml.m4.16xlarge",
                                             #  instance_type="ml.m4.10xlarge",
-                                             moving_average_window=str(moving_average_window)
+                                             moving_average_window=str(moving_average_window),
+                                             time_minute_limit=str(time_minute_limit)
                                              )
     training_inputs = {
         "crypto_data": TrainingInput(
