@@ -148,6 +148,7 @@ class GrudModel(LightningModule):
         # x: (batch, seq_len, input_size)
         # y: (batch, output_size(=frame_size))
         x, y = batch['data'], batch['target']
+        y = y[:, :self.output_size]
         y_hat = self(x)
         if self.loss_type == 'bce':
             loss = self.criterion(y_hat, y.float())
