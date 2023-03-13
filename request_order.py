@@ -14,12 +14,34 @@ from src.component.binance.constraint import (
     LEVERAGE, TARGET_RATE, TARGET_REVENUE_RATE, STOP_LOSS_RATE, DANGER_RATE, PLUS_FUTURE_PRICE_RATE, MINUS_FUTURE_PRICE_RATE,
     STOP_PROFIT_RATE, PROFIT_AMOUNT_MULTIPLIER, STOP_REVENUE_PROFIT_RATE, CURRENT_VARIANCE, FUTURE_CHANGES_DIR, FUTURE_CHANGE_MULTIPLIER, 
     FUTURE_MAX_LEN, FUTURE_MIN_LEN, TRADE_RATE, MOVING_AVERAGE_WINDOW, SWITCHING_CHANGE_MULTIPLIER,
-    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE, LOSS_CRITERIA_RATE, LOSS_TYPE, TAKE_PROFIT_MULTIPLIER
+    COLUMN_LIMIT, MINIMUM_FUTURE_PRICE_RATE, EXIT_PRICE_CHANGE, LOSS_CRITERIA_RATE, LOSS_TYPE, TAKE_PROFIT_MULTIPLIER, MA_VARIANT_PREVIOUS_STEP,
+    HIGH_RSI, LOW_RSI, RSI_DIR, RSI_MAX_LEN
 )
 from src.component.binance.binance import Binance
 from src.module.db.redis.redis import Redis
 from src.module.utills.data import get_ma
 
+
+def rsi_calc(ohlc: pd.DataFrame, period: int = 14):
+    ohlc = ohlc[4].astype(float)
+    delta = ohlc.diff()
+    gains, declines = delta.copy(), delta.copy()
+    gains[gains < 0] = 0
+    declines[declines > 0] = 0
+
+    _gain = gains.ewm(com=(period-1), min_periods=period).mean()
+    _loss = declines.abs().ewm(com=(period-1), min_periods=period).mean()
+
+    RS = _gain / _loss
+    return pd.Series(100-(100/(1+RS)), name="RSI")
+
+# def rsi_binance(itv='1h', simbol='BTC/USDT', ohlcv=None):
+def rsi_binance(ohlcv=None):
+    
+    # ohlcv = binance.fetch_ohlcv(symbol="BTC/USDT", timeframe=itv, limit=200)
+    df = pd.DataFrame(ohlcv)
+    rsi = rsi_calc(df, 12).iloc[-1]
+    return rsi
 
 def chek_futre_price(res_data: List, future_changes: Dict) -> Tuple[Dict, Dict]:
     pos_cnt = len([change for change in res_data if change > 0])
@@ -67,7 +89,8 @@ def get_price_ma_variant_with_index(data_list: List, window: int, index: int) ->
     price_variant = df["close"].iloc[-1] - df["close"].iloc[-index] 
     # ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-window]
     ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-index]
-    return price_variant, ma_vaiant
+    ma_vaiant_previous = df[f"ma_{window}"].iloc[-1 - MA_VARIANT_PREVIOUS_STEP] - df[f"ma_{window}"].iloc[-index - MA_VARIANT_PREVIOUS_STEP]
+    return price_variant, ma_vaiant, ma_vaiant_previous
 
 def main():
     client = boto3.client("sagemaker-runtime")
@@ -81,6 +104,15 @@ def main():
     around_per_60 = abs(now_minute - 60) <= 10
     around_per_30_5 = abs(now_minute - 30) <= 5
     around_per_60_5 = abs(now_minute - 60) <= 5
+    
+    ohlcv = binance.get_ohlcv(ticker=TARGET_COIN_TICKER, timeframe='1m', limit=200)
+    rsi = rsi_binance(ohlcv)
+    rsi_dic = json.load(open(os.path.join(RSI_DIR, "rsi.json"), "r"))
+    rsi_dic["rsi"].append(rsi)
+    rsi_dic["rsi"] = rsi_dic["rsi"][-RSI_MAX_LEN:]
+    with open(os.path.join(RSI_DIR, "rsi.json"), "w") as f:
+        json.dump(rsi_dic, f)
+    print("RSI LIST :", rsi_dic["rsi"][-RSI_MAX_LEN:])
     #시장가 taker 0.04, 지정가 maker 0.02 -> 시장가가 수수료가 더 비싸다.
 
     #시장가 숏 포지션 잡기 
@@ -104,6 +136,10 @@ def main():
                                     ContentType="application/json",
                                     Accept="application/json",
                                     Body=request_body)
+        # res = client.invoke_endpoint(EndpointName="test",
+        #                             ContentType="application/json",
+        #                             Accept="application/json",
+        #                             Body=request_body)
         # next 30분 각각의 예측값을 받아온다. 길이 30
         res_data = json.loads(res["Body"].read().decode("utf-8"))["prediction"]
         # res_data = [24000 for _ in range(30)]
@@ -125,8 +161,7 @@ def main():
     future_diff = [abs(res_data[i]) * 100 for i in range(0, len(res_data))]
     future_variance = np.mean(future_diff)
     # _, ma_100_variant = get_price_ma_variant(data_list, 100)
-    _, ma_100_variant = get_price_ma_variant_with_index(data_list, 100, 2)
-    print("ma_100_variant", ma_100_variant)
+
     # scaling
     res_data = [res_data[i] * (1 + variance / future_variance) for i in range(0, len(res_data))]
     
@@ -200,12 +235,56 @@ def main():
         print("plus switching price change", plus_switching_rate, "%")
         print("minus switching price change", minus_switching_rate, "%")
     else:
+        futre_change = []
         pass
     
+    print("------------------------------------------------------")
+    _, ma_100_variant, ma_100_variant_previous = get_price_ma_variant_with_index(data_list, 100, 2)
+    _, ma_25_variant, ma_25_variant_previous = get_price_ma_variant_with_index(data_list, 25, 2)
+    print("ma_100_variant", ma_100_variant)
+    print("ma_100_variant_previous", ma_100_variant_previous)
+    print("ma_25_variant", ma_25_variant)
+    print("ma_25_variant_previous", ma_25_variant_previous)
+    increase_percent = (ma_100_variant - ma_100_variant_previous) / abs(ma_100_variant_previous) * 100
+    increase_percent_25 = (ma_25_variant - ma_25_variant_previous) / abs(ma_25_variant_previous) * 100
+    print("increase_percent", increase_percent)
+    print("increase_percent_25", increase_percent_25)
+    sum_rsi = 0
+    if (position["amount"] > 0) or (position["amount"] == 0 and ma_100_variant > 0):
+        # variant_increase = ma_100_variant > ma_100_variant_previous
+        variant_increase = increase_percent > 7
+        variant_increase_25 = increase_percent_25 > 7
+        sum_rsi = sum([i > rsi for i in rsi_dic["rsi"]])
+        rsi_vary = sum_rsi > 5
+        sum_5_rsi = sum([i > rsi for i in rsi_dic["rsi"][-6:]])
+        rsi_5_vary = sum_5_rsi >= 2
+    elif position["amount"] < 0 or (position["amount"] == 0 and ma_100_variant < 0):
+        # variant_increase = ma_100_variant < ma_100_variant_previous
+        variant_increase = increase_percent < -7
+        variant_increase_25 = increase_percent_25 < -7
+        sum_rsi = sum([i < rsi for i in rsi_dic["rsi"]])
+        rsi_vary = sum_rsi > 5
+        sum_5_rsi = sum([i < rsi for i in rsi_dic["rsi"][-6:]])
+        rsi_5_vary = sum_5_rsi >= 2
+    else:
+        variant_increase = False
+        variant_increase_25 = False
+        rsi_vary = False
+    print("variant_increase", variant_increase)
+    print("variant_increase_25", variant_increase_25)
+    print('RSI :', rsi)
+    print('RSI vary :', rsi_vary)
+    print('RSI 5 vary :', rsi_5_vary)
+    print("------------------------------------------------------")
+
     #0이면 포지션 잡기전
-    if abs_amt == 0 and res_data and (not around_per_30_5 or not around_per_60_5):  
+    if abs_amt == 0 and res_data:
+        # and (not around_per_30_5 or not around_per_60_5):  
         
-        if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1: # 추세 추종, 추세 꺾일때 진입 방지
+        # if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66: # 추세 추종, 추세 꺾일때 진입 방지
+        # if 0 < futre_change["max_chage"] < PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66: # 추세 추종, 추세 꺾일때 진입 방지
+        if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and ma_25_variant > 0:  
+        # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66 and futre_change["max_chage"] > 0 and ma_25_variant >0:  
             print("------------------------------------------------------")
             print("Buy", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
@@ -214,7 +293,10 @@ def main():
             binance.create_order(TARGET_COIN_TICKER, "buy", first_amount, current_price)
             # binance.create_market_order(TARGET_COIN_TICKER, "buy", first_amount)
             binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
-        elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1:
+        # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 30:
+        # elif 0 > futre_change["max_chage"] > MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 30:
+        elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and ma_25_variant < 0:
+        # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 40 and not futre_change["max_chage"] < 0 and ma_25_variant < 0:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
             print("------------------------------------------------------")
@@ -269,9 +351,11 @@ def main():
                         if around_per_30 or around_per_60: # 30분, 60분 추세가 반대로 바뀔 것 같으면
                             profit_amount = abs_amt
                         else:
-                            profit_amount = profit_amount * 3.0
+                            profit_amount = profit_amount * 4.0
                             if abs(position["amount"]) < profit_amount:
                                 profit_amount = abs(position["amount"])
+                        print("------------------------------------------------------")
+                        print("떨어질 것 같으므로", profit_amount, "매도")
                 # 5% 매도
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매도")
@@ -287,9 +371,11 @@ def main():
                             # 오를 것 같으면 포지션 종료 (손실 방지), 이미 많이 떨어지고 이
                             profit_amount = abs_amt
                         else:
-                            profit_amount = profit_amount * 3.0
+                            profit_amount = profit_amount * 4.0
                             if abs(position["amount"]) < profit_amount:
                                 profit_amount = abs(position["amount"])
+                            print("------------------------------------------------------")
+                            print("오를 것 같으므로", profit_amount, "매수")
                 print("------------------------------------------------------")
                 print(f"이익 0.2% 이상이므로 {5 * PROFIT_AMOUNT_MULTIPLIER}% 매수")
                 current_price = binance.get_now_price(TARGET_COIN_TICKER)
@@ -324,7 +410,10 @@ def main():
 
         # 숏 포지션일 경우
         if position["amount"] < 0 and res_data:
-            if futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1:
+            # if futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 30:
+            # if 0 > futre_change["max_chage"] > MINUS_FUTURE_PRICE_RATE and ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 30:
+            # 
+            if ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and ma_25_variant < 0:
                 # and (not around_per_30_5 or not around_per_60_5):
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
@@ -369,7 +458,8 @@ def main():
             
             # 손절 로직 물림 방지, 반대방향 신호가 강하고 ma, 가격도 반대방향으로 이동중일 경우 + 매수 비중이 20% 이상일 경우, 손실 보고 있을 경우
                         
-            elif (futre_change["max_chage"] > plus_switching_rate):
+            elif (futre_change["max_chage"] > plus_switching_rate) or (ma_100_variant > 0 and abs(ma_100_variant) >= 1):
+            # and ma_100_variant > 0:
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과, 조금만 투입헀을 경우 손절
                 if (price_variant > 0 and ma_variant > 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
@@ -432,8 +522,10 @@ def main():
         
         # 롱 포지션일 경우
         elif position["amount"] > 0 and res_data:
-            if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1 \
-            and (not around_per_30_5 or not around_per_60_5):
+            # if futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66:
+            # if 0 < futre_change["max_chage"] < PLUS_FUTURE_PRICE_RATE and ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66:
+            if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and ma_25_variant > 0:  
+                # and (not around_per_30_5 or not around_per_60_5) 
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:
             # 5% 추가 매수
@@ -474,7 +566,8 @@ def main():
                     print("------------------------------------------------------")
                     binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
-            elif (futre_change["max_chage"] < minus_switching_rate):
+            elif (futre_change["max_chage"] < minus_switching_rate) or (ma_100_variant < 0 and abs(ma_100_variant) >= 1):
+            # and ma_100_variant < 0:
                 price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # 매수 비중 10% 초과
                 if (price_variant < 0 and ma_variant < 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant < 0 and abs(ma_100_variant) > 8:

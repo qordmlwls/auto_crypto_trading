@@ -101,6 +101,14 @@ class Binance:
         coin_price = coin_info['last']
         return coin_price
     
+    def get_ohlcv(self, ticker, timeframe='1m', limit=1000):
+        time.sleep(0.1)
+        try:
+            ohlcv = self.binance.fetch_ohlcv(ticker, timeframe, limit=limit)
+        except Exception as e:
+            print('---', e)
+        return ohlcv
+    
     # 지정가로 매수한다. 첫번째: 코인 티커, 두번째: 포지션, 세번째: 매수 수량, 네번째: 매수 가격
     def create_order(self, ticker, side, amount, price):
         time.sleep(0.1)
@@ -138,8 +146,8 @@ class Binance:
             time.sleep(10)
              
         # 주문 정보를 읽어온다.
-        orders = self.binance.fetch_orders(ticker)
-        
+        # orders = self.binance.fetch_orders(ticker)
+        orders = self.binance.fetch_open_orders(ticker)
         stop_loss_ok = False
         stop_order_list = []
         for order in orders:
@@ -198,13 +206,18 @@ class Binance:
             return
     
     def cancel_failed_order(self, ticker):
-        time.sleep(0.1)
-        orders = self.binance.fetch_orders(ticker)
-        for order in orders:
-            if order['status'] == "open" and order['type'] == 'limit':
-                self.binance.cancel_order(order['id'], ticker)
-                
-            
+        time.sleep(1)
+        # orders = self.binance.fetch_orders(ticker)
+        open_orders = self.binance.fetch_open_orders(ticker)
+        for order in open_orders:
+            try:
+                if order['status'] == "open" and order['type'] == 'limit':
+                    self.binance.cancel_order(order['id'], ticker)
+            except ccxt.OrderNotFound as e:
+                print('---------------------')
+                print('cancel_error')
+                print(e)
+                self.binance.cancel_all_orders(ticker)
     # def set_stop_loss_price(self, ticker, stop_price, rest=True):
     #     if rest:
     #         time.sleep(0.1)

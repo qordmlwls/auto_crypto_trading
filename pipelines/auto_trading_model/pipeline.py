@@ -134,7 +134,8 @@ def get_train_step(role,
                    loss_type,
                    addtional_layer,
                    learning_rate,
-                   patience):
+                   patience,
+                   hidden_size):
     estimator = HuggingFace(
         py_version='py38',
         image_uri=image_uri,
@@ -158,6 +159,7 @@ def get_train_step(role,
             'patience': patience,
             'frame_size': frame_size,
             'output_size': output_size,
+            'hidden_size': hidden_size,
         },
         sagemaker_session=pipeline_session
     )
@@ -237,7 +239,8 @@ def get_pipeline(
         addtional_layer=True,
         learning_rate=0.0001,
         patience=100,
-        time_minute_limit=TIME_MINUTE_LIMIT):
+        time_minute_limit=TIME_MINUTE_LIMIT,
+        hidden_size=150):
     """_summary_
 
     Args:
@@ -296,7 +299,8 @@ def get_pipeline(
                                 loss_type=loss_type,
                                 addtional_layer=str(addtional_layer),
                                 learning_rate=str(learning_rate),
-                                patience=str(patience)
+                                patience=str(patience),
+                                hidden_size=str(hidden_size)
                                 )
     model_data = step_train.properties.ModelArtifacts.S3ModelArtifacts 
     step_create_model = get_create_model_step(role,
