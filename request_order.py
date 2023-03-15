@@ -326,7 +326,7 @@ def main():
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and ma_25_variant > 0 and rsi_varint_increase:  
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and ma_25_variant > 0 and rsi_varint_increase:  
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and rsi_varint_increase and top_delta_same:  
-        if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
+        if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66 and futre_change["max_chage"] > 0 and ma_25_variant >0:  
             print("------------------------------------------------------")
             print("Buy", first_amount, TARGET_COIN_TICKER)
@@ -341,7 +341,7 @@ def main():
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and ma_25_variant < 0 and rsi_varint_increase:
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and ma_25_variant < 0 and rsi_varint_increase:
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and rsi_varint_increase and top_delta_same:
-        elif ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
+        elif ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 40 and not futre_change["max_chage"] < 0 and ma_25_variant < 0:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
@@ -462,7 +462,7 @@ def main():
             # if ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and ma_25_variant < 0 and rsi_varint_increase:
             # if ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and ma_25_variant < 0 and rsi_varint_increase:
             # if ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi > LOW_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] > plus_switching_rate) and rsi_varint_increase and top_delta_same:
-            if ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
+            if ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
                 # and (not around_per_30_5 or not around_per_60_5):
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
@@ -590,7 +590,7 @@ def main():
             # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and not rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and ma_25_variant > 0 and rsi_varint_increase:  
             # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and ma_25_variant > 0 and rsi_varint_increase:  
             # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and (rsi < HIGH_RSI or rsi_5_vary) and rsi_vary and not (futre_change["max_chage"] < minus_switching_rate) and rsi_varint_increase and top_delta_same:
-            if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
+            if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
                 # and (not around_per_30_5 or not around_per_60_5) 
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:
