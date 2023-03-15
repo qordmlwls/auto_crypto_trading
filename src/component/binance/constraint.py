@@ -17,7 +17,7 @@ TIME_MINUTE_LIMIT = 43200
 MA_VARIANT_PREVIOUS_STEP = 1
 
 HIGH_RSI = 58
-LOW_RSI = 45
+LOW_RSI = 46
 
 LEVERAGE = 3  # 레버리지 많이 하면 세금 많이 내야함
 #아래는 타겟 수익율로 마음껏 조절하세요
@@ -32,7 +32,7 @@ STOP_LOSS_RATE = 0.5
 DANGER_RATE = -5.0
 
 # 거래량
-TRADE_RATE = 7.0
+TRADE_RATE = 10.0
 
 # 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
 FUTURE_CHANGES_DIR = '/home/ubuntu/auto_crypto_trading/future_changes'
