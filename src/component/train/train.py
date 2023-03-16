@@ -284,8 +284,8 @@ class GruTrainer:
         
         whole_y = pd.concat(train_y)
         
-        y_25 = whole_y['close'].quantile(0.25)
-        y_75 = whole_y['close'].quantile(0.75)
+        y_25 = whole_y['close'].quantile(0.5)
+        y_75 = whole_y['close'].quantile(0.95)
         y_max = whole_y['close'].max()
         y_min = whole_y['close'].min()
         

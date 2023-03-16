@@ -344,8 +344,8 @@ def main():
     
     # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
-    # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
-    # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
+    long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
+    short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
     
     # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
@@ -368,8 +368,8 @@ def main():
         # # if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
         # if (long_criteria and not korean_time) or (short_criteria and korean_time):
         # if long_criteria or long_criteria_new:
-        # if long_criteria_new or long_criteria_new_new:
-        if long_criteria_new_new:
+        if long_criteria_new or long_criteria_new_new:
+        # if long_criteria_new_new:
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66 and futre_change["max_chage"] > 0 and ma_25_variant >0:  
             print("------------------------------------------------------")
             print("Buy", first_amount, TARGET_COIN_TICKER)
@@ -387,8 +387,8 @@ def main():
         # elif ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
         # elif (short_criteria and not korean_time) or (long_criteria and korean_time):
         # elif short_criteria or short_criteria_new:
-        # elif short_criteria_new or short_criteria_new_new:
-        elif short_criteria_new_new:
+        elif short_criteria_new or short_criteria_new_new:
+        # elif short_criteria_new_new:
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 40 and not futre_change["max_chage"] < 0 and ma_25_variant < 0:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
@@ -512,8 +512,8 @@ def main():
             # if ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
             # if (short_criteria and not korean_time) or (long_criteria and korean_time):
             # if short_criteria or short_criteria_new:
-            # if short_criteria_new or short_criteria_new_new:
-            if short_criteria_new_new:
+            if short_criteria_new or short_criteria_new_new:
+            # if short_criteria_new_new:
                 # and (not around_per_30_5 or not around_per_60_5):
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
@@ -644,8 +644,8 @@ def main():
             # if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
             # if (long_criteria and not korean_time) or (short_criteria and korean_time):
             # if long_criteria or long_criteria_new:
-            # if long_criteria_new or long_criteria_new_new:
-            if long_criteria_new_new:
+            if long_criteria_new or long_criteria_new_new:
+            # if long_criteria_new_new:
                 # and (not around_per_30_5 or not around_per_60_5) 
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:
