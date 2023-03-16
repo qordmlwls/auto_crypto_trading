@@ -297,6 +297,7 @@ def main():
         top_variant_delta_same = top_variant_delta > 0
         delta_cnt = pos_cnt > neg_cnt
         delta_cnt_5 = pos_cnt_5 > neg_cnt_5
+        delta_5_ratio_condition = pos_cnt_5 == 3 and neg_cnt_5 == 2
     elif position["amount"] < 0 or (position["amount"] == 0 and ma_100_variant < 0):
         # variant_increase = ma_100_variant < ma_100_variant_previous
         variant_increase = increase_percent < -7
@@ -309,6 +310,7 @@ def main():
         top_variant_delta_same = top_variant_delta < 0
         delta_cnt = neg_cnt > pos_cnt
         delta_cnt_5 = neg_cnt_5 > pos_cnt_5
+        delta_5_ratio_condition = neg_cnt_5 == 3 and pos_cnt_5 == 2
     else:
         variant_increase = False
         variant_increase_25 = False
@@ -330,19 +332,28 @@ def main():
     print("TOP VARIANT DELTA same", top_variant_delta_same)
     print("DELTA CNT", delta_cnt)
     print("DELTA CNT 5", delta_cnt_5)
+    print("DELTA 5 RATIO CONDITION", delta_5_ratio_condition)
     print("------------------------------------------------------")
     # 시간차 막기 위해 다시 체크
+    current_price = binance.get_now_price(TARGET_COIN_TICKER)
     position = binance.position_check(TARGET_COIN_SYMBOL)
     abs_amt = abs(position["amount"])
     
-    long_criteria = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same and delta_cnt
-    short_criteria = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same and delta_cnt
+    # long_criteria = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same and delta_cnt
+    # short_criteria = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same and delta_cnt
+    
     # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
     # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
-    long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
-    short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
+    
+    # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
+    # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
+    
+    # 조정이 아니고 추세를 따라가는 로직
+    long_criteria_new_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and variant_increase and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price > 0
+    short_criteria_new_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and variant_increase and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price < 0
+    
     #0이면 포지션 잡기전
     if abs_amt == 0 and res_data:
         # and (not around_per_30_5 or not around_per_60_5):  
@@ -357,7 +368,8 @@ def main():
         # # if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
         # if (long_criteria and not korean_time) or (short_criteria and korean_time):
         # if long_criteria or long_criteria_new:
-        if long_criteria_new:
+        # if long_criteria_new or long_criteria_new_new:
+        if long_criteria_new_new:
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66 and futre_change["max_chage"] > 0 and ma_25_variant >0:  
             print("------------------------------------------------------")
             print("Buy", first_amount, TARGET_COIN_TICKER)
@@ -375,7 +387,8 @@ def main():
         # elif ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
         # elif (short_criteria and not korean_time) or (long_criteria and korean_time):
         # elif short_criteria or short_criteria_new:
-        elif short_criteria_new:
+        # elif short_criteria_new or short_criteria_new_new:
+        elif short_criteria_new_new:
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 40 and not futre_change["max_chage"] < 0 and ma_25_variant < 0:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
@@ -499,7 +512,8 @@ def main():
             # if ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
             # if (short_criteria and not korean_time) or (long_criteria and korean_time):
             # if short_criteria or short_criteria_new:
-            if short_criteria_new:
+            # if short_criteria_new or short_criteria_new_new:
+            if short_criteria_new_new:
                 # and (not around_per_30_5 or not around_per_60_5):
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
@@ -630,7 +644,8 @@ def main():
             # if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
             # if (long_criteria and not korean_time) or (short_criteria and korean_time):
             # if long_criteria or long_criteria_new:
-            if long_criteria_new:
+            # if long_criteria_new or long_criteria_new_new:
+            if long_criteria_new_new:
                 # and (not around_per_30_5 or not around_per_60_5) 
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:

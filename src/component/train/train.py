@@ -21,6 +21,7 @@ import pandas as pd
 
 from src.module.utills.data import prepare_batch
 from src.module.utills.gpu import get_gpu_device
+from src.module.utills.data import make_robust
 
 
 class GrudModel(LightningModule):
@@ -229,7 +230,7 @@ class GruTrainer:
             
         return data_x
     
-    def _build_sequence_y(self, test: DataFrame) -> List:
+    def _build_sequence_y(self, test: DataFrame) -> List[DataFrame]:
         data_y = []
         
         for j in range(self.args['frame_size'], len(test) - self.args['frame_size']):
@@ -282,21 +283,44 @@ class GruTrainer:
         val_y = self._build_sequence_y(scaled_val_y)
         
         whole_y = pd.concat(train_y)
+        
+        y_25 = whole_y['close'].quantile(0.25)
+        y_75 = whole_y['close'].quantile(0.75)
+        y_max = whole_y['close'].max()
+        y_min = whole_y['close'].min()
+        
+        new_train_y = []
+        for y in train_y:
+            new_y = y.copy()
+            new_y['close'] = new_y['close'].apply(lambda x: y_min if x < y_25 else (y_max if x > y_75 else x))
+            new_train_y.append(new_y)
+        
+        new_val_y = []
+        for y in val_y:
+            new_y = y.copy()
+            new_y['close'] = new_y['close'].apply(lambda x: y_min if x < y_25 else (y_max if x > y_75 else x))
+            new_val_y.append(new_y)
+            
+        new_whole_y = pd.concat(new_train_y)
+        
         if self.args['loss_type'] == 'bce': # binary classification
             train_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in train_y]
             val_y = [pd.DataFrame((y > 0).astype(int), columns=y.columns) for y in val_y]
         elif scaler_y is not None:
-            scaler_y.fit(whole_y)
-            train_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in train_y]
-            val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in val_y]
+            # scaler_y.fit(whole_y)
+            # train_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in train_y]
+            # val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in val_y]
+            scaler_y.fit(new_whole_y)
+            new_train_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in new_train_y]
+            new_val_y = [pd.DataFrame(scaler_y.transform(y), columns=y.columns) for y in new_val_y]
         else:
             pass
         
         train_x = self._build_sequence_x(scaled_train_x)
         val_x = self._build_sequence_x(scaled_val_x)
         
-        train_dataset = GrudDataset(train_x, train_y)
-        val_dataset = GrudDataset(val_x, val_y)
+        train_dataset = GrudDataset(train_x, new_train_y)
+        val_dataset = GrudDataset(val_x, new_val_y)
         self.train_dataloader = DataLoader(train_dataset, 
                                            batch_size=self.args['batch_size'], 
                                            shuffle=False,  # 시계열이라 막 셔플하면 안됨

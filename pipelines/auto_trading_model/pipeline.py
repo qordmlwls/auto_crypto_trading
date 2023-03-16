@@ -237,10 +237,10 @@ def get_pipeline(
         frame_size=TIME_WINDOW,
         output_size=PREDICTION_OUTPUT_SIZE,
         addtional_layer=True,
-        learning_rate=0.0001,
+        learning_rate=0.00001,
         patience=100,
         time_minute_limit=TIME_MINUTE_LIMIT,
-        hidden_size=150):
+        hidden_size=200):
     """_summary_
 
     Args:

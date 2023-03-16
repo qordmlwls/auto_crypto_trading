@@ -7,6 +7,7 @@ import pandas as pd
 from multiprocessing import Pool
 import torch
 
+from sklearn.preprocessing import MinMaxScaler
 
 def rolling_window(data: np.array, window):
     shape = data.shape[:-1] + (data.shape[-1] - window + 1, window)
@@ -57,6 +58,33 @@ def get_ma(df: pd.DataFrame, window: int) -> pd.DataFrame:
     df[f'ma_{window}'] = df['close'].rolling(window=window).mean()
     # df[f'ma_{window}'] = df[f'ma_{window}'].shift(1)
     df[f'ma_{window}'] = df[f'ma_{window}'].fillna(0)
+    return df
+
+def robust_scaling(df: pd.DataFrame, maximum: int, minimum: int) -> pd.DataFrame:
+    for column in df.columns:
+        scaler = MinMaxScaler(feature_range=(minimum, maximum))
+        df.loc[:, column] = df.loc[:, column].fillna(0).astype(float, errors='ignore')
+        trd = df[column].describe()['75%']
+        first = df[column].describe()['25%']
+        tmp_df = df.loc[((df[column] < trd) & (df[column] > first)), [column]]
+        scaler.fit(tmp_df)
+
+        high_df = df.loc[df[column] >= trd, [column]]
+        low_df = df.loc[df[column] <= first, [column]]
+
+        df.loc[tmp_df.index, [column]] = scaler.fit_transform(df.loc[tmp_df.index, [column]])
+        df.loc[high_df.index, [column]] = maximum
+        df.loc[low_df.index, [column]] = minimum
+    return df
+
+def make_robust(df: pd.DataFrame) -> pd.DataFrame:
+    for column in df.columns:
+        trd = df[column].describe()['75%']
+        first = df[column].describe()['25%']
+        maximum = df[column].describe()['max']
+        minimum = df[column].describe()['min']
+        df.loc[df[column] >= trd, [column]] = maximum
+        df.loc[df[column] <= first, [column]] = minimum
     return df
 
 if __name__ == '__main__':
