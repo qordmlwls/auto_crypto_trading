@@ -292,13 +292,13 @@ class GruTrainer:
         new_train_y = []
         for y in train_y:
             new_y = y.copy()
-            new_y['close'] = new_y['close'].apply(lambda x: y_min if x < y_25 else (y_max if x > y_75 else x))
+            new_y['close'] = new_y['close'].apply(lambda x: y_25 if x < y_25 else (y_75 if x > y_75 else x))
             new_train_y.append(new_y)
         
         new_val_y = []
         for y in val_y:
             new_y = y.copy()
-            new_y['close'] = new_y['close'].apply(lambda x: y_min if x < y_25 else (y_max if x > y_75 else x))
+            new_y['close'] = new_y['close'].apply(lambda x: y_25 if x < y_25 else (y_75 if x > y_75 else x))
             new_val_y.append(new_y)
             
         new_whole_y = pd.concat(new_train_y)
