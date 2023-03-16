@@ -7,6 +7,8 @@ import json
 import tarfile
 import shutil
 from distutils.dir_util import copy_tree
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import logging
 
 from src.component.preprocess.preprocess import preprocess
@@ -32,9 +34,12 @@ def main(config: Dict):
     #     if key.key.startswith('data/data_'):
     #         s3.download_file(key.key, join(DATA_DIR, key.key.split('/')[-1]))
     file_list = os.listdir(DATA_DIR)
+    now = datetime.now()
+    before_month = now - relativedelta(months=config['month_limit'])
+    before_month = datetime.strftime(before_month, '%Y%m%d%H%M')
     data_list = []
     for file in file_list:
-        if 'data_' in file:
+        if 'data_' in file and file.split('_')[-1].split('.')[0] > before_month:
             with open(join(DATA_DIR, file), 'r') as f:
                 data = json.load(f)
             data_list.append(data)
@@ -62,6 +67,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--moving_average_window', type=int, default=100)
     parser.add_argument('--time_minute_limit', type=int, default=21600)
+    parser.add_argument('--month_limit', type=int, default=1)
     parameters = parser.parse_args()
     config = parameters.__dict__
     main(config)
