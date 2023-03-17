@@ -8,19 +8,19 @@ BINANCE_SECRET_KEY = os.environ.get('BINANCE_SECRET_KEY', '')
 TARGET_COIN_TICKER = 'BTC/USDT'
 TARGET_COIN_SYMBOL = 'BTCUSDT'
 
-TIME_WINDOW = 30
+TIME_WINDOW = 15
 PREDICTION_OUTPUT_SIZE = 5
 MOVING_AVERAGE_WINDOW = 100
 # COLUMN_LIMIT = 100
-COLUMN_LIMIT = 3
+COLUMN_LIMIT = 100
 TIME_MINUTE_LIMIT = 43200
 
-# COLUMNS = ['open', 'high', 'low', 'close', 'volume', f"ma_{MOVING_AVERAGE_WINDOW}", "ma_25"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
-#                     + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
-#                     + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
-COLUMNS = ['open_diff', 'high_diff', 'low_diff', 'close_diff', 'volume_diff', f"ma_{MOVING_AVERAGE_WINDOW}", "ma_25"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+COLUMNS = ['open', 'high', 'low', 'close', 'volume', 'open_diff', 'high_diff', 'low_diff', 'close_diff', 'volume_diff', f"ma_{MOVING_AVERAGE_WINDOW}", "ma_25"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
                     + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
                     + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
+# COLUMNS = ['open_diff', 'high_diff', 'low_diff', 'close_diff', 'volume_diff', f"ma_{MOVING_AVERAGE_WINDOW}", "ma_25"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+#                     + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
+#                     + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
 
 MA_VARIANT_PREVIOUS_STEP = 1
 

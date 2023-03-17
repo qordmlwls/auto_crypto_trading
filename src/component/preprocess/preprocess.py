@@ -12,6 +12,8 @@ from warnings import simplefilter
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 
+ORDER_BOOK_RANK_SIZE = 100
+
 
 def process_func(data_list: np.ndarray) -> pd.DataFrame:
     data_list = data_list.tolist()
