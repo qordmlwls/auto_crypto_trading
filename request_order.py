@@ -113,13 +113,13 @@ def main():
     close = ohlcv[4]
     delta = close.diff()
     # delta_list = delta[-RSI_MAX_LEN:].tolist()
-    delta_list = delta[-5:].tolist()
+    delta_list = delta[-4:].tolist()
     neg_cnt = len([i for i in delta_list[-3:] if i < 0])
     pos_cnt = len([i for i in delta_list[-3:] if i > 0])
     neg_cnt_5 = len([i for i in delta_list[-5:] if i < 0])
     pos_cnt_5 = len([i for i in delta_list[-5:] if i > 0])
     # volume_list = volume[-RSI_MAX_LEN:].tolist()
-    volume_list = volume[-5:].tolist()
+    volume_list = volume[-4:].tolist()
     max_volume_index = np.argmax(volume_list)
     max_delta_index = np.argmax([abs(i) for i in delta_list])
     top_delta = delta_list[max_volume_index]
@@ -297,7 +297,7 @@ def main():
         top_variant_delta_same = top_variant_delta > 0
         delta_cnt = pos_cnt > neg_cnt
         delta_cnt_5 = pos_cnt_5 > neg_cnt_5
-        delta_5_ratio_condition = pos_cnt_5 == 3 and neg_cnt_5 == 2
+        delta_5_ratio_condition = pos_cnt_5 >= 1 and neg_cnt_5 >= 1
     elif position["amount"] < 0 or (position["amount"] == 0 and ma_100_variant < 0):
         # variant_increase = ma_100_variant < ma_100_variant_previous
         variant_increase = increase_percent < -7
@@ -310,7 +310,7 @@ def main():
         top_variant_delta_same = top_variant_delta < 0
         delta_cnt = neg_cnt > pos_cnt
         delta_cnt_5 = neg_cnt_5 > pos_cnt_5
-        delta_5_ratio_condition = neg_cnt_5 == 3 and pos_cnt_5 == 2
+        delta_5_ratio_condition = neg_cnt_5 >= 1 and pos_cnt_5 >= 1
     else:
         variant_increase = False
         variant_increase_25 = False
@@ -351,8 +351,8 @@ def main():
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
     
     # 조정이 아니고 추세를 따라가는 로직
-    long_criteria_new_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and variant_increase and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price > 0
-    short_criteria_new_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and variant_increase and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price < 0
+    long_criteria_new_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price > 0 and delta_cnt_5
+    short_criteria_new_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price < 0 and delta_cnt_5
     
     #0이면 포지션 잡기전
     if abs_amt == 0 and res_data:
@@ -368,8 +368,8 @@ def main():
         # # if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
         # if (long_criteria and not korean_time) or (short_criteria and korean_time):
         # if long_criteria or long_criteria_new:
-        if long_criteria_new or long_criteria_new_new:
-        # if long_criteria_new_new:
+        # if long_criteria_new or long_criteria_new_new:
+        if long_criteria_new_new:
         # if ma_100_variant > 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi < 66 and futre_change["max_chage"] > 0 and ma_25_variant >0:  
             print("------------------------------------------------------")
             print("Buy", first_amount, TARGET_COIN_TICKER)
@@ -387,8 +387,8 @@ def main():
         # elif ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:  
         # elif (short_criteria and not korean_time) or (long_criteria and korean_time):
         # elif short_criteria or short_criteria_new:
-        elif short_criteria_new or short_criteria_new_new:
-        # elif short_criteria_new_new:
+        # elif short_criteria_new or short_criteria_new_new:
+        elif short_criteria_new_new:
         # elif ma_100_variant < 0 and abs(ma_100_variant) >= 1 and variant_increase and rsi > 40 and not futre_change["max_chage"] < 0 and ma_25_variant < 0:
             print("------------------------------------------------------")
             print("Sell", first_amount, TARGET_COIN_TICKER)
@@ -512,8 +512,8 @@ def main():
             # if ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
             # if (short_criteria and not korean_time) or (long_criteria and korean_time):
             # if short_criteria or short_criteria_new:
-            if short_criteria_new or short_criteria_new_new:
-            # if short_criteria_new_new:
+            # if short_criteria_new or short_criteria_new_new:
+            if short_criteria_new_new:
                 # and (not around_per_30_5 or not around_per_60_5):
                 # price_variant, ma_variant = get_price_ma_variant(data_list, 25)
                 # if ma_variant < 0:
@@ -644,8 +644,8 @@ def main():
             # if ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same:
             # if (long_criteria and not korean_time) or (short_criteria and korean_time):
             # if long_criteria or long_criteria_new:
-            if long_criteria_new or long_criteria_new_new:
-            # if long_criteria_new_new:
+            # if long_criteria_new or long_criteria_new_new:
+            if long_criteria_new_new:
                 # and (not around_per_30_5 or not around_per_60_5) 
             #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
             # if ma_variant > 0:

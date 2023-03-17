@@ -237,7 +237,7 @@ def get_pipeline(
         frame_size=TIME_WINDOW,
         output_size=PREDICTION_OUTPUT_SIZE,
         addtional_layer=True,
-        learning_rate=0.00001,
+        learning_rate=0.0001,
         patience=100,
         time_minute_limit=TIME_MINUTE_LIMIT,
         hidden_size=200):
@@ -271,8 +271,8 @@ def get_pipeline(
     step_preprocess = get_preprocessing_step(role,
                                              processing_image_uri,
                                              pipeline_session=pipeline_session,
-                                             instance_type="ml.m4.16xlarge",
-                                            #  instance_type="ml.m4.10xlarge",
+                                            #  instance_type="ml.m4.16xlarge",
+                                             instance_type="ml.r5.4xlarge",
                                              moving_average_window=str(moving_average_window),
                                              time_minute_limit=str(time_minute_limit)
                                              )

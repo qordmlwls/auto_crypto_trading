@@ -5,14 +5,12 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-from src.component.binance.constraint import TIME_WINDOW
+from src.component.binance.constraint import TIME_WINDOW, COLUMNS, COLUMN_LIMIT
 from src.module.utills.data import parallelize_list_to_df, get_ma
 
 from warnings import simplefilter
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
-
-ORDER_BOOK_RANK_SIZE = 100
 
 
 def process_func(data_list: np.ndarray) -> pd.DataFrame:
@@ -20,12 +18,12 @@ def process_func(data_list: np.ndarray) -> pd.DataFrame:
     df_list = []
     for idx, data in tqdm(enumerate(data_list)):
         # 거래량 기준 정렬    
-        bids = sorted(data['order_book']['bids'], key=lambda x: x[1], reverse=True)[:ORDER_BOOK_RANK_SIZE]
-        asks = sorted(data['order_book']['asks'], key=lambda x: x[1], reverse=True)[:ORDER_BOOK_RANK_SIZE]
+        bids = sorted(data['order_book']['bids'], key=lambda x: x[1], reverse=True)[:COLUMN_LIMIT]
+        asks = sorted(data['order_book']['asks'], key=lambda x: x[1], reverse=True)[:COLUMN_LIMIT]
         
         price = pd.DataFrame(zip([data['ticker']['open']], [data['ticker']['high']], [data['ticker']['low']],
                                     [data['ticker']['close']], [data['ticker']['baseVolume']], [data['ticker']['datetime']]), columns=['open', 'high', 'low', 'close', 'volume', 'datetime'])
-        for i in range(ORDER_BOOK_RANK_SIZE):
+        for i in range(COLUMN_LIMIT):
             price[f'bid_{i}'] = bids[i][0]
             price[f'bid_volume_{i}'] = bids[i][1]
             price[f'ask_{i}'] = asks[i][0]
@@ -57,12 +55,12 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     # df_list = []
     # for idx, data in tqdm(enumerate(data_list)):
     #     # 거래량 기준 정렬    
-    #     bids = sorted(data['order_book']['bids'], key=lambda x: x[1], reverse=True)[:ORDER_BOOK_RANK_SIZE]
-    #     asks = sorted(data['order_book']['asks'], key=lambda x: x[1], reverse=True)[:ORDER_BOOK_RANK_SIZE]
+    #     bids = sorted(data['order_book']['bids'], key=lambda x: x[1], reverse=True)[:COLUMN_LIMIT]
+    #     asks = sorted(data['order_book']['asks'], key=lambda x: x[1], reverse=True)[:COLUMN_LIMIT]
         
     #     price = pd.DataFrame(zip([data['ticker']['open']], [data['ticker']['high']], [data['ticker']['low']],
     #                                 [data['ticker']['close']], [data['ticker']['baseVolume']]), columns=['open', 'high', 'low', 'close', 'volume'])
-    #     for i in range(ORDER_BOOK_RANK_SIZE):
+    #     for i in range(COLUMN_LIMIT):
     #         price[f'bid_{i}'] = bids[i][0]
     #         price[f'bid_volume_{i}'] = bids[i][1]
     #         price[f'ask_{i}'] = asks[i][0]
@@ -89,11 +87,17 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df.sort_values(by='datetime', inplace=True)
     
     df.drop('datetime', axis=1, inplace=True)
-    columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
-                + [f'ask_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] + [f'bid_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)] \
-                + [f'ask_volume_{i}' for i in range(ORDER_BOOK_RANK_SIZE)]
+    # columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{config['moving_average_window']}", "ma_25"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
+    #             + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
+    #             + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
+    
+    if len(set(['open', 'high', 'low', 'close', 'volume']) & set(df.columns)) == 5:
+        df[['open_diff', 'high_diff', 'low_diff', 'close_diff', 'volume_diff']] = df[['open', 'high', 'low', 'close', 'volume']].diff()
+        df = df.iloc[1:]
+        
     df = get_ma(df, config['moving_average_window'])
-    df = get_ma(df, 25)[columns]
+    # df = get_ma(df, 25)[COLUMNS]
+    df = get_ma(df, 25)
     df.reset_index(drop=True, inplace=True)
     df = df.iloc[config['moving_average_window'] - 1:]
     df = df.iloc[-config['time_minute_limit']:]
