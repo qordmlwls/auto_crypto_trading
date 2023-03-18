@@ -230,7 +230,7 @@ def get_pipeline(
         epochs=1000,
         column_limit=50,
         scaler_x='robust',
-        scaler_y='none',
+        scaler_y='robust',
         loss_type=LOSS_TYPE,
         endpoint_instance_type="ml.t2.medium",
         endpoint_instance_count=1,
