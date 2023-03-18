@@ -47,6 +47,7 @@ def input_fn(request_body, request_content_type):
         
     df = get_ma(df, 25)
     df = get_ma(df, model_config['moving_average_window']).iloc[-model_config['frame_size']:]  
+    df.reset_index(drop=True, inplace=True)
     df = get_weighted_average_price(df)
     df = df[COLUMNS]
     
