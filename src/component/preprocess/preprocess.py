@@ -50,7 +50,22 @@ def process_func(data_list: np.ndarray) -> pd.DataFrame:
         df_list.append(price)
     df = pd.concat(df_list, axis=0)
     return df
-    
+
+def get_weighted_average_price(data: pd.DataFrame) -> pd.DataFrame:
+    # data['weighted_average_price'] = (data['bid_0'] * data['bid_volume_0'] + data['ask_0'] * data['ask_volume_0']) / (data['bid_volume_0'] + data['ask_volume_0'])
+    data['weighted_average_price1'] = 0.0
+    data['weighted_average_price2'] = 0.0
+    data['volume_imbalance'] = 0.0
+    for idx in tqdm(range(len(data))):
+        highest_bid_idx = np.argmax([data.loc[idx, f'bid_{i}'] for i in range(COLUMN_LIMIT)])
+        lowest_ask_idx = np.argmin([data.loc[idx, f'ask_{i}'] for i in range(COLUMN_LIMIT)])
+        second_highest_bid_idx = np.argsort([data.loc[idx, f'bid_{i}'] for i in range(COLUMN_LIMIT)])[::-1][1]
+        second_lowest_ask_idx = np.argsort([data.loc[idx, f'ask_{i}'] for i in range(COLUMN_LIMIT)])[1]
+        data.loc[idx, 'weighted_average_price1'] = (data.loc[idx, f'bid_{highest_bid_idx}'] * data.loc[idx, f'bid_volume_{highest_bid_idx}'] + data.loc[idx, f'ask_{lowest_ask_idx}'] * data.loc[idx, f'ask_volume_{lowest_ask_idx}']) / (data.loc[idx, f'bid_volume_{highest_bid_idx}'] + data.loc[idx, f'ask_volume_{lowest_ask_idx}'])
+        data.loc[idx, 'weighted_average_price2'] = (data.loc[idx, f'bid_{second_highest_bid_idx}'] * data.loc[idx, f'bid_volume_{second_highest_bid_idx}'] + data.loc[idx, f'ask_{second_lowest_ask_idx}'] * data.loc[idx, f'ask_volume_{second_lowest_ask_idx}']) / (data.loc[idx, f'bid_volume_{second_highest_bid_idx}'] + data.loc[idx, f'ask_volume_{second_lowest_ask_idx}'])
+        data.loc[idx, 'volume_imbalance'] = abs((data.loc[idx, f'ask_volume_{lowest_ask_idx}'] + data.loc[idx, f'ask_volume_{second_lowest_ask_idx}']) - (data.loc[idx, f'bid_volume_{highest_bid_idx}'] + data.loc[idx, f'bid_volume_{second_highest_bid_idx}']))
+        
+    return data
         
 def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
 
@@ -103,6 +118,7 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df.reset_index(drop=True, inplace=True)
     df = df.iloc[config['moving_average_window'] - 1:]
     df = df.iloc[-config['time_minute_limit']:]
+    df = get_weighted_average_price(df)
     if len(df) % TIME_WINDOW != 0:
         df = df.iloc[(len(df) % TIME_WINDOW):]
     return df

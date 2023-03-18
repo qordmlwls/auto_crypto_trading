@@ -21,7 +21,8 @@ COLUMNS = ['open', 'high', 'low', 'close', 'volume', 'open_diff', 'high_diff', '
 # COLUMNS = ['open_diff', 'high_diff', 'low_diff', 'close_diff', 'volume_diff', f"ma_{MOVING_AVERAGE_WINDOW}", "ma_25"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
 #                     + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
 #                     + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
-
+COLUMNS = ['open', 'high', 'low', 'close', 'volume', 'open_diff', 'high_diff', 'low_diff', 'close_diff', 'volume_diff', f"ma_{MOVING_AVERAGE_WINDOW}", "ma_25"] \
+                    + ['weighted_average_price1', 'weighted_average_price2', 'volume_imbalance']
 MA_VARIANT_PREVIOUS_STEP = 1
 
 HIGH_RSI = 58
@@ -37,10 +38,10 @@ TARGET_REVENUE_RATE = TARGET_RATE * 100.0
 #스탑로스 비율설정 0.5는 원금의 마이너스 50%를 의미한다. 0.1은 마이너스 10%
 STOP_LOSS_RATE = 0.5
 # 손절 마이너스 수익률
-DANGER_RATE = -5.0
+DANGER_RATE = -1.5
 
 # 거래량
-TRADE_RATE = 5.0
+TRADE_RATE = 15.0
 
 # 예상 변동성, 해당 수치를 넘어가면 매수/매도한다.
 FUTURE_CHANGES_DIR = '/home/ubuntu/auto_crypto_trading/future_changes'
@@ -57,7 +58,7 @@ FUTURE_MIN_LEN = 60  # 1시간
 # Real Revenue
 STOP_PROFIT_RATE = 0.1
 # Revenue
-STOP_REVENUE_PROFIT_RATE = 0.1
+STOP_REVENUE_PROFIT_RATE = 0.15
 PROFIT_AMOUNT_MULTIPLIER = 3
 TAKE_PROFIT_MULTIPLIER = 2
 # Exit

@@ -10,6 +10,7 @@ import joblib
 
 from src.component.train.train import GrudModel
 from src.component.binance.constraint import COLUMNS
+from src.component.preprocess.preprocess import get_weighted_average_price
 from src.module.utills.gpu import get_gpu_device
 from src.module.utills.data import rolling_window, get_ma
 
@@ -45,7 +46,9 @@ def input_fn(request_body, request_content_type):
         df = df.iloc[1:]
         
     df = get_ma(df, 25)
-    df = get_ma(df, model_config['moving_average_window'])[COLUMNS].iloc[-model_config['frame_size']:]  
+    df = get_ma(df, model_config['moving_average_window']).iloc[-model_config['frame_size']:]  
+    df = get_weighted_average_price(df)
+    df = df[COLUMNS]
     
     scaled_x = pd.DataFrame(scaler_x.transform(df), columns=df.columns)
     

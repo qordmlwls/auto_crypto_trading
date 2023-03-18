@@ -274,8 +274,10 @@ def main():
     print("------------------------------------------------------")
     _, ma_100_variant, ma_100_variant_previous = get_price_ma_variant_with_index(data_list, 60, 2)
     _, ma_25_variant, ma_25_variant_previous = get_price_ma_variant_with_index(data_list, 25, 2)
+    _, ma_100_variant_2, ma_100_variant_previous_2 = get_price_ma_variant_with_index(data_list, 100, 3)
     print("ma_100_variant", ma_100_variant)
     print("ma_100_variant_previous", ma_100_variant_previous)
+    print("ma_100_variant_2", ma_100_variant_2)
     print("ma_25_variant", ma_25_variant)
     print("ma_25_variant_previous", ma_25_variant_previous)
     increase_percent = (ma_100_variant - ma_100_variant_previous) / abs(ma_100_variant_previous) * 100
@@ -286,6 +288,7 @@ def main():
     rsi_variant = [abs(i - rsi) for i in rsi_dic["rsi"]]
     rsi_varint_increase = (sum(rsi_variant) / len(rsi_variant)) > 7
     if (position["amount"] > 0) or (position["amount"] == 0 and ma_100_variant > 0):
+        rsi_condtion = rsi < 66
         # variant_increase = ma_100_variant > ma_100_variant_previous
         variant_increase = increase_percent > 7
         variant_increase_25 = increase_percent_25 > 6
@@ -299,6 +302,7 @@ def main():
         delta_cnt_5 = pos_cnt_5 > neg_cnt_5
         delta_5_ratio_condition = pos_cnt_5 >= 1 and neg_cnt_5 >= 1
     elif position["amount"] < 0 or (position["amount"] == 0 and ma_100_variant < 0):
+        rsi_condtion = rsi > 37
         # variant_increase = ma_100_variant < ma_100_variant_previous
         variant_increase = increase_percent < -7
         variant_increase_25 = increase_percent_25 < -6
@@ -312,6 +316,7 @@ def main():
         delta_cnt_5 = neg_cnt_5 > pos_cnt_5
         delta_5_ratio_condition = neg_cnt_5 >= 1 and pos_cnt_5 >= 1
     else:
+        rsi_condtion = False
         variant_increase = False
         variant_increase_25 = False
         rsi_vary = False
@@ -320,6 +325,7 @@ def main():
         top_variant_delta_same = False
         delta_cnt = False
         delta_cnt_5 = False
+        delta_5_ratio_condition = False
     # RSI vary, RSI variant increse는 저점, 고점 판독 위함 False일 경우 고점, 저점임 cf) rsi_variant_increase는 가격 변동성 측정 위함. 균형 이루면 힘이 없을 가능 성 큼.
     print("variant_increase", variant_increase)
     print("variant_increase_25", variant_increase_25)
@@ -351,8 +357,8 @@ def main():
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
     
     # 조정이 아니고 추세를 따라가는 로직
-    long_criteria_new_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price > 0 and delta_cnt_5
-    short_criteria_new_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and delta_5_ratio_condition and top_delta_same and current_price < 0 and delta_cnt_5
+    long_criteria_new_new = ma_100_variant_2 > 0 and ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and rsi_condtion and delta_5_ratio_condition and top_delta_same and current_price > 0 and delta_cnt_5
+    short_criteria_new_new = ma_100_variant_2 < 0 and ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and rsi_condtion and delta_5_ratio_condition and top_delta_same and current_price < 0 and delta_cnt_5
     
     #0이면 포지션 잡기전
     if abs_amt == 0 and res_data:
@@ -580,7 +586,7 @@ def main():
             
             # 포지션 종료, 지정가 매매
             # elif (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0) or (ma_100_variant > 0 and abs(ma_100_variant) >= 1):
-            elif (ma_100_variant > 0 and abs(ma_100_variant) >= 1):
+            elif (ma_100_variant > 0 and abs(ma_100_variant) >= 1) and leverage_revenu_rate <= DANGER_RATE:
                 print("------------------------------------------------------")
                 print("반대 신호가 강해 지정가 포지션 종료")
                 # print("Buy", amount, TARGET_COIN_TICKER)
@@ -591,7 +597,7 @@ def main():
                 binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                     
             # 포지션 종료, exit 시그널
-            elif data_list[-1]["close"] - data_list[-3]["close"] > EXIT_PRICE_CHANGE and revenue_rate < DANGER_RATE:
+            elif data_list[-1]["close"] - data_list[-3]["close"] > EXIT_PRICE_CHANGE and leverage_revenu_rate < DANGER_RATE:
                 print("------------------------------------------------------")
                 print("Exit Sinal이 강해 손절 감수하고 포지션 종료")
                 binance.create_market_order(TARGET_COIN_TICKER, "buy", abs_amt)
@@ -708,7 +714,7 @@ def main():
             # 포지션 종료, 지정가 매매
             
             # elif (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0)  or (ma_100_variant < 0 and abs(ma_100_variant) >= 1):
-            elif (ma_100_variant < 0 and abs(ma_100_variant) >= 1):
+            elif (ma_100_variant < 0 and abs(ma_100_variant) >= 1) and leverage_revenu_rate <= DANGER_RATE:
                 print("------------------------------------------------------")
                 print("반대 신호가 강해 지정가 포지션 종료")
                 # print("Sell", amount, TARGET_COIN_TICKER)
@@ -720,7 +726,7 @@ def main():
                                   
             
             # 포지션 종료, exit 시그널
-            elif data_list[-1]["close"] - data_list[-3]["close"] < -EXIT_PRICE_CHANGE and revenue_rate < DANGER_RATE:
+            elif data_list[-1]["close"] - data_list[-3]["close"] < -EXIT_PRICE_CHANGE and leverage_revenu_rate < DANGER_RATE:
                 print("------------------------------------------------------")
                 print("Exit Signal이 강해 손절 감수하고 포지션 종료")
                 binance.create_market_order(TARGET_COIN_TICKER, "sell", abs_amt)
