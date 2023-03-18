@@ -118,6 +118,7 @@ def preprocess(data_list: List, config: Dict) -> pd.DataFrame:
     df.reset_index(drop=True, inplace=True)
     df = df.iloc[config['moving_average_window'] - 1:]
     df = df.iloc[-config['time_minute_limit']:]
+    df.reset_index(drop=True, inplace=True)
     df = get_weighted_average_price(df)
     if len(df) % TIME_WINDOW != 0:
         df = df.iloc[(len(df) % TIME_WINDOW):]
