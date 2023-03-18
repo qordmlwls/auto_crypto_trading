@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--scaler_y', type=str, default='robust', help='scaler for y')
     parser.add_argument('--addtional_layer', type=bool, default=False, help='addtional layer')
     parser.add_argument('--output_size', type=int, default=TIME_WINDOW, help='output size of prediction')
+    parser.add_argument('--make_robust', type=bool, default=True, help='make robust')
     parameters = parser.parse_args()
     model_config = parameters.__dict__
     

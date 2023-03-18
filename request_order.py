@@ -302,7 +302,7 @@ def main():
         delta_cnt_5 = pos_cnt_5 > neg_cnt_5
         delta_5_ratio_condition = pos_cnt_5 >= 1 and neg_cnt_5 >= 1
     elif position["amount"] < 0 or (position["amount"] == 0 and ma_100_variant < 0):
-        rsi_condtion = rsi > 37
+        rsi_condtion = rsi > 32
         # variant_increase = ma_100_variant < ma_100_variant_previous
         variant_increase = increase_percent < -7
         variant_increase_25 = increase_percent_25 < -6
