@@ -7,7 +7,7 @@ from typing import NoReturn, Dict, List, Tuple
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from sklearn.model_selection import train_test_split
 # from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import RobustScaler, MinMaxScaler
+from sklearn.preprocessing import RobustScaler, MinMaxScaler, PowerTransformer, QuantileTransformer
 import joblib
 from pytorch_lightning import LightningModule, Trainer, seed_everything
 from torch.utils.data import DataLoader, Dataset
@@ -260,6 +260,10 @@ class GruTrainer:
             scaler_y = MinMaxScaler()
         elif self.args['scaler_y'] == 'robust':
             scaler_y = RobustScaler()
+        elif self.args['scaler_y'] == 'power':
+            scaler_y = PowerTransformer()
+        elif self.args['scaler_y'] == 'quantile':  # 이상치가 많아서 quantile 사용
+            scaler_y = QuantileTransformer()
         else:
             scaler_y = None
         train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=self.args['test_ratio'], shuffle=False)
