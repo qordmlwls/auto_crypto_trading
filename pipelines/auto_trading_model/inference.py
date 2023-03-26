@@ -93,7 +93,9 @@ def predict_fn(input_data, model):
         output = model(input_data['input_data'])
         # volatility지만 outlier가 많아서 스케일링 진행 2023.03.06 add
         if model_config['scaler_y'] != 'none':
-            if model_config['loss_type'] != 'bce':
+            if model_config['scaler_y'] == 'power':
+                out = scaler_y.inverse_transform(output.cpu().detach().numpy().reshape(-1, 1)).reshape(1, -1)
+            elif model_config['loss_type'] != 'bce':
                 out = scaler_y.inverse_transform(output.cpu().detach().numpy())
             else: # binary classification
                 out = output.cpu().detach().numpy()
