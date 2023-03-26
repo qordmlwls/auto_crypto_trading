@@ -24,6 +24,15 @@ from src.module.utills.gpu import get_gpu_device
 from src.component.binance.constraint import COLUMNS
 
 
+class RMSELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        
+    def forward(self,yhat,y):
+        return torch.sqrt(self.mse(yhat,y))
+    
+
 class GrudModel(LightningModule):
     def __init__(self, **args):
         super().__init__()
@@ -68,6 +77,8 @@ class GrudModel(LightningModule):
             self.criterion = nn.SmoothL1Loss()
         elif args['loss_type'] == 'bce':
             self.criterion = nn.BCEWithLogitsLoss()
+        elif args['loss_type'] == 'rmse':
+            self.criterion = RMSELoss()
         # self.activation_fn = nn.ReLU()
         self.activation_fn = self.activation(self.activation_function)
         
