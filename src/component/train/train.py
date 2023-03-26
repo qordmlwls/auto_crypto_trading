@@ -256,6 +256,9 @@ class GruTrainer:
             scaler_x = MinMaxScaler()
         elif self.args['scaler_x'] == 'robust':
             scaler_x = RobustScaler()
+        elif self.args['scaler_x'] == 'power':
+            scaler_x = PowerTransformer()    
+            
         if self.args['scaler_y'] == 'minmax':
             scaler_y = MinMaxScaler()
         elif self.args['scaler_y'] == 'robust':

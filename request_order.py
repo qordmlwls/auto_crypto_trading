@@ -79,7 +79,7 @@ def get_price_ma_variant(data_list: List, window: int) -> Tuple[float, float]:
     ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-15]
     return price_variant, ma_vaiant
 
-def get_price_ma_variant_with_index(data_list: List, window: int, index: int) -> Tuple[float, float]:
+def get_price_ma_variant_with_index(data_list: List, window: int, index: int) -> Tuple[float, float, float, float]:
     columns = ['open', 'high', 'low', 'close', 'volume', f"ma_{window}"] + [f'bid_{i}' for i in range(COLUMN_LIMIT)] \
                 + [f'ask_{i}' for i in range(COLUMN_LIMIT)] + [f'bid_volume_{i}' for i in range(COLUMN_LIMIT)] \
                 + [f'ask_volume_{i}' for i in range(COLUMN_LIMIT)]
@@ -89,8 +89,9 @@ def get_price_ma_variant_with_index(data_list: List, window: int, index: int) ->
     price_variant = df["close"].iloc[-1] - df["close"].iloc[-index] 
     # ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-window]
     ma_vaiant = df[f"ma_{window}"].iloc[-1] - df[f"ma_{window}"].iloc[-index]
+    now_ma = df[f"ma_{window}"].iloc[-1]
     ma_vaiant_previous = df[f"ma_{window}"].iloc[-1 - MA_VARIANT_PREVIOUS_STEP] - df[f"ma_{window}"].iloc[-index - MA_VARIANT_PREVIOUS_STEP]
-    return price_variant, ma_vaiant, ma_vaiant_previous
+    return price_variant, ma_vaiant, ma_vaiant_previous, now_ma
 
 def main():
     client = boto3.client("sagemaker-runtime")
@@ -113,13 +114,32 @@ def main():
     close = ohlcv[4]
     delta = close.diff()
     # delta_list = delta[-RSI_MAX_LEN:].tolist()
-    delta_list = delta[-4:].tolist()
+    full_delta_list = delta[-60:-1].tolist()
+    full_volume_list = volume[-60:-1].tolist()
+    # average_volume = np.mean(full_volume_list)
+    average_volume = np.quantile(full_volume_list, 0.85) # 80% 이상의 volume
+    max_minus_delta_index = np.argmin(full_delta_list)
+    max_plus_delta_index = np.argmax(full_delta_list)
+    max_minus_delta = full_delta_list[max_minus_delta_index]
+    max_plus_delta = full_delta_list[max_plus_delta_index]
+    max_minus_delta_volume_ratio = abs(full_delta_list[max_minus_delta_index]) / full_volume_list[max_minus_delta_index]
+    max_plus_delta_volume_ratio = full_delta_list[max_plus_delta_index] / full_volume_list[max_plus_delta_index]
+    full_delta_volume_ratio_list = [abs(i) / j if j > average_volume else 0 for i, j in zip(full_delta_list, full_volume_list)] # volume 정해진 값 이상만 비교
+    max_delta_volume_ratio_index = np.argmax(full_delta_volume_ratio_list)
+    max_delta_volume_ratio_delta = full_delta_list[max_delta_volume_ratio_index]
+    max_delta_volume_ratio_volume = full_volume_list[max_delta_volume_ratio_index]
+    max_volume_index = np.argmax(full_volume_list)
+    # max_volume = full_volume_list[max_volume_index]
+    max_volume_delta = full_delta_list[max_volume_index]
+    max_delta_index = np.argmax([abs(i) for i in full_delta_list])
+    max_delta = full_delta_list[max_delta_index]
+    delta_list = delta[-5:-1].tolist()
     neg_cnt = len([i for i in delta_list[-3:] if i < 0])
     pos_cnt = len([i for i in delta_list[-3:] if i > 0])
     neg_cnt_5 = len([i for i in delta_list[-5:] if i < 0])
     pos_cnt_5 = len([i for i in delta_list[-5:] if i > 0])
     # volume_list = volume[-RSI_MAX_LEN:].tolist()
-    volume_list = volume[-4:].tolist()
+    volume_list = volume[-5:-1].tolist()
     max_volume_index = np.argmax(volume_list)
     max_delta_index = np.argmax([abs(i) for i in delta_list])
     top_delta = delta_list[max_volume_index]
@@ -138,6 +158,7 @@ def main():
     # rsi_dic["close"] = rsi_dic["close"][-RSI_MAX_LEN:]
     with open(os.path.join(RSI_DIR, "rsi.json"), "w") as f:
         json.dump(rsi_dic, f)
+    
     print("------------------------------------------------------")
     print("RSI LIST :", rsi_dic["rsi"][-RSI_MAX_LEN:])
     print("VOLUME LIST :", volume_list)
@@ -151,11 +172,7 @@ def main():
     #시장가 숏 포지션 잡기 
     #print(binance.create_market_sell_order(Target_Coin_Ticker, 0.002))
     #print(binance.create_order(Target_Coin_Ticker, "market", "sell", 0.002, None))
-    # 지정가 주문 실패된 것 취소하기
-    binance.cancel_failed_order(TARGET_COIN_TICKER)
-    
-    # 수집 시간
-    time.sleep(0.1)
+
     # if redis.size() == TIME_WINDOW:
     if redis.size() == MOVING_AVERAGE_WINDOW + TIME_WINDOW:
         
@@ -272,14 +289,23 @@ def main():
         pass
     
     print("------------------------------------------------------")
-    _, ma_100_variant, ma_100_variant_previous = get_price_ma_variant_with_index(data_list, 60, 2)
-    _, ma_25_variant, ma_25_variant_previous = get_price_ma_variant_with_index(data_list, 25, 2)
-    _, ma_100_variant_2, ma_100_variant_previous_2 = get_price_ma_variant_with_index(data_list, 100, 3)
-    print("ma_100_variant", ma_100_variant)
-    print("ma_100_variant_previous", ma_100_variant_previous)
+    _, ma_100_variant, ma_100_variant_previous, ma_100 = get_price_ma_variant_with_index(data_list, 60, 2)
+    _, ma_25_variant, ma_25_variant_previous, ma_25 = get_price_ma_variant_with_index(data_list, 25, 2)
+    _, ma_7_variant, ma_7_variant_previous, ma_7 = get_price_ma_variant_with_index(data_list, 7, 2)
+    _, ma_100_variant_2, ma_100_variant_previous_2, ma_100_2 = get_price_ma_variant_with_index(data_list, 100, 3)
+    
+    
+    print("* ma_60_variant", ma_100_variant)
+    print("* ma_60_variant_previous", ma_100_variant_previous)
     print("ma_100_variant_2", ma_100_variant_2)
-    print("ma_25_variant", ma_25_variant)
-    print("ma_25_variant_previous", ma_25_variant_previous)
+    print("* ma_25_variant", ma_25_variant)
+    print("* ma_25_variant_previous", ma_25_variant_previous)
+    print("* ma_7_variant", ma_7_variant)
+    print("* ma_7_variant_previous", ma_7_variant_previous)
+    print("ma_60", ma_100)
+    print("ma_25", ma_25)
+    print("ma_7", ma_7)
+    
     increase_percent = (ma_100_variant - ma_100_variant_previous) / abs(ma_100_variant_previous) * 100
     increase_percent_25 = (ma_25_variant - ma_25_variant_previous) / abs(ma_25_variant_previous) * 100
     print("increase_percent", increase_percent)
@@ -287,8 +313,10 @@ def main():
     sum_rsi = 0
     rsi_variant = [abs(i - rsi) for i in rsi_dic["rsi"]]
     rsi_varint_increase = (sum(rsi_variant) / len(rsi_variant)) > 7
+    
     if (position["amount"] > 0) or (position["amount"] == 0 and ma_100_variant > 0):
         rsi_condtion = rsi < 66
+        # rsi_condtion = rsi < 70
         # variant_increase = ma_100_variant > ma_100_variant_previous
         variant_increase = increase_percent > 7
         variant_increase_25 = increase_percent_25 > 6
@@ -301,8 +329,13 @@ def main():
         delta_cnt = pos_cnt > neg_cnt
         delta_cnt_5 = pos_cnt_5 > neg_cnt_5
         delta_5_ratio_condition = pos_cnt_5 >= 1 and neg_cnt_5 >= 1
+        delta_volume_ratio_condition = max_plus_delta_volume_ratio > max_minus_delta_volume_ratio
+        max_delta_condition = max_plus_delta > abs(max_minus_delta)
+        ma_condition = ma_7 > ma_25 
     elif position["amount"] < 0 or (position["amount"] == 0 and ma_100_variant < 0):
-        rsi_condtion = rsi > 32
+        # rsi_condtion = rsi > 27
+        rsi_condtion = rsi > 33
+        # rsi_condtion = rsi > 29
         # variant_increase = ma_100_variant < ma_100_variant_previous
         variant_increase = increase_percent < -7
         variant_increase_25 = increase_percent_25 < -6
@@ -315,6 +348,9 @@ def main():
         delta_cnt = neg_cnt > pos_cnt
         delta_cnt_5 = neg_cnt_5 > pos_cnt_5
         delta_5_ratio_condition = neg_cnt_5 >= 1 and pos_cnt_5 >= 1
+        delta_volume_ratio_condition = max_minus_delta_volume_ratio > max_plus_delta_volume_ratio
+        max_delta_condition = abs(max_minus_delta) > max_plus_delta
+        ma_condition = ma_7 < ma_25
     else:
         rsi_condtion = False
         variant_increase = False
@@ -326,39 +362,65 @@ def main():
         delta_cnt = False
         delta_cnt_5 = False
         delta_5_ratio_condition = False
+        delta_volume_ratio_condition = False
+        max_delta_condition = False
+        ma_condition = False
     # RSI vary, RSI variant increse는 저점, 고점 판독 위함 False일 경우 고점, 저점임 cf) rsi_variant_increase는 가격 변동성 측정 위함. 균형 이루면 힘이 없을 가능 성 큼.
     print("variant_increase", variant_increase)
-    print("variant_increase_25", variant_increase_25)
-    print('RSI :', rsi)
+    print("* variant_increase_25", variant_increase_25)
+    print('* RSI :', rsi)
     print('RSI vary :', rsi_vary)
-    print('RSI 5 vary :', rsi_5_vary)
+    print('* RSI 5 vary :', rsi_5_vary)
     print('RSI variant :', rsi_variant)
     print('RSI variant increase :', rsi_varint_increase)
     print('TOP DELTA same :', top_delta_same)
-    print("TOP VARIANT DELTA same", top_variant_delta_same)
+    print("* TOP VARIANT DELTA same", top_variant_delta_same)
     print("DELTA CNT", delta_cnt)
-    print("DELTA CNT 5", delta_cnt_5)
-    print("DELTA 5 RATIO CONDITION", delta_5_ratio_condition)
-    print("------------------------------------------------------")
+    print("* DELTA CNT 5", delta_cnt_5)
+    print("* DELTA 5 RATIO CONDITION", delta_5_ratio_condition)
+    print("* LAST DELTA", delta_list[-1])
+    print("MAX DELTA 60", max_delta)
+    print("MAX VOL DELTA 60", max_volume_delta)
+    print("MAX PLUS DELTA 60", max_plus_delta)
+    print("MAX MINUS DELTA 60", max_minus_delta)
+    print("MAX MINUS DELTA VOLUME 60", full_volume_list[max_minus_delta_index])
+    print("MAX PLUS DELTA VOLUME 60", full_volume_list[max_plus_delta_index])
+    print("DELTA VOLUME RATIO CONDITION", delta_volume_ratio_condition)
+    print("Average volume", average_volume)
+    print("MAX VOL DELTA RAITO 60 VOLUME", max_delta_volume_ratio_volume)
+    print("* MAX VOL DELTA RATIO 60 DELTA", max_delta_volume_ratio_delta)
+    print("MAX DELTA CONDITION", max_delta_condition)
+    print("* MA CONDITION", ma_condition)
+
+    
+    # 수집 시간 - 최대한 분봉의 마지막까지 기다림 - 차트를 최대한 반영하기 위함
+    time.sleep(15)
+    # 지정가 주문 실패된 것 취소하기
+    binance.cancel_failed_order(TARGET_COIN_TICKER)
     # 시간차 막기 위해 다시 체크
     current_price = binance.get_now_price(TARGET_COIN_TICKER)
     position = binance.position_check(TARGET_COIN_SYMBOL)
     abs_amt = abs(position["amount"])
+    current_delta = current_price - close.to_list()[-2]
+    print('CURRENT DELTA :', current_delta)
+    print("------------------------------------------------------")
     
     # long_criteria = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same and delta_cnt
     # short_criteria = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and top_delta_same and top_variant_delta_same and delta_cnt
     
     # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
-    long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
-    short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5
+    # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 2 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5 and max_delta > 0
+    # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 2 and variant_increase_25 and rsi_5_vary and not top_delta_same and not top_variant_delta_same and delta_cnt_5 and max_delta < 0
     
     # long_criteria_new = ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
     # short_criteria_new = ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and rsi_5_vary and not top_delta_same
     
     # 조정이 아니고 추세를 따라가는 로직
-    long_criteria_new_new = ma_100_variant_2 > 0 and ma_100_variant > 0 and ma_25_variant > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and rsi_condtion and delta_5_ratio_condition and top_delta_same and current_price > 0 and delta_cnt_5
-    short_criteria_new_new = ma_100_variant_2 < 0 and ma_100_variant < 0 and ma_25_variant < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and rsi_condtion and delta_5_ratio_condition and top_delta_same and current_price < 0 and delta_cnt_5
+    # long_criteria_new_new = ma_7_variant > 0 and ma_7_variant_previous > 0 and ma_100_variant_2 > 0 and ma_100_variant > 0 and ma_25_variant > 0 and ma_25_variant_previous > 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and rsi_condtion and delta_5_ratio_condition and top_delta_same and delta_list[-1] > 0 and delta_cnt_5
+    # short_criteria_new_new = ma_7_variant < 0 and ma_7_variant_previous < 0 and ma_100_variant_2 < 0 and ma_100_variant < 0 and ma_25_variant < 0 and ma_25_variant_previous < 0 and abs(ma_100_variant) >= 1 and abs(ma_25_variant) >= 1 and variant_increase_25 and not rsi_5_vary and rsi_condtion and delta_5_ratio_condition and top_delta_same and delta_list[-1] < 0 and delta_cnt_5
+    long_criteria_new_new = current_delta > 0 and ma_7_variant > 0 and ma_condition and not (ma_7_variant_previous < 0 and abs(ma_7_variant_previous) > 1) and ma_100_variant > 0 and ma_25_variant > 0 and ma_25_variant_previous > 0 and abs(ma_7_variant) >= 1 and abs(ma_25_variant) >= 1 and (abs(ma_100_variant) >= 1 or (abs(ma_100_variant) > 0.5 and delta_list[-1] < 0))  and variant_increase_25 and ((not rsi_5_vary and delta_list[-1] > 0) or (rsi_5_vary and delta_list[-1] < 0)) and rsi_condtion and delta_5_ratio_condition and top_variant_delta_same and delta_cnt_5 and max_delta_volume_ratio_delta > 0
+    short_criteria_new_new = current_delta < 0 and ma_7_variant < 0 and ma_condition and not (ma_7_variant_previous > 0 and abs(ma_7_variant_previous) > 1) and ma_100_variant < 0 and ma_25_variant < 0 and ma_25_variant_previous < 0 and abs(ma_7_variant) >= 1 and abs(ma_25_variant) >= 1 and (abs(ma_100_variant) >= 1 or (abs(ma_100_variant) > 0.5 and delta_list[-1] > 0)) and variant_increase_25 and ((not rsi_5_vary and delta_list[-1] < 0) or (rsi_5_vary and delta_list[-1] > 0)) and rsi_condtion and delta_5_ratio_condition and top_variant_delta_same and delta_cnt_5 and max_delta_volume_ratio_delta < 0
     
     #0이면 포지션 잡기전
     if abs_amt == 0 and res_data:
@@ -548,41 +610,41 @@ def main():
                 
             # elif futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
-            elif (futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0) \
-                 or (futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE) \
-                 or (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0):
-                  # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
-                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                if ma_variant > 0:
-                # 포지션 종료, 5% 추가 매수
-                    print("------------------------------------------------------")
-                    print("반대 신호가 강해 포지션 스위칭")
-                    print("Buy", amount, TARGET_COIN_TICKER)
-                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                    binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
-                    # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
-                    print("------------------------------------------------------")
-                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            # elif (futre_change["max_chage"] > plus_switching_rate and revenue_rate > 0) \
+            #      or (futre_change["max_chage"] > PLUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE) \
+            #      or (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0):
+            #       # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
+            #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+            #     if ma_variant > 0:
+            #     # 포지션 종료, 5% 추가 매수
+            #         print("------------------------------------------------------")
+            #         print("반대 신호가 강해 포지션 스위칭")
+            #         print("Buy", amount, TARGET_COIN_TICKER)
+            #         current_price = binance.get_now_price(TARGET_COIN_TICKER)
+            #         binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
+            #         # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
+            #         print("------------------------------------------------------")
+            #         binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             # 손절 로직 물림 방지, 반대방향 신호가 강하고 ma, 가격도 반대방향으로 이동중일 경우 + 매수 비중이 20% 이상일 경우, 손실 보고 있을 경우
                         
-            elif (futre_change["max_chage"] > plus_switching_rate):
-            # and ma_100_variant > 0:
-                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                # 매수 비중 10% 초과, 조금만 투입헀을 경우 손절
-                if (price_variant > 0 and ma_variant > 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
-                    # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
-                    # and (revenue_rate < DANGER_RATE) \
+            # elif (futre_change["max_chage"] > plus_switching_rate):
+            # # and ma_100_variant > 0:
+            #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+            #     # 매수 비중 10% 초과, 조금만 투입헀을 경우 손절
+            #     if (price_variant > 0 and ma_variant > 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant > 0 and abs(ma_100_variant) > 8:
+            #         # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
+            #         # and (revenue_rate < DANGER_RATE) \
                     
-                    # 포지션 종료, 5% 추가 매수
-                    print("------------------------------------------------------")
-                    print("반대 신호가 강해 손절 후 포지션 스위칭")
-                    print("Buy", amount, TARGET_COIN_TICKER)
-                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                    binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
-                    # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
-                    print("------------------------------------------------------")
-                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            #         # 포지션 종료, 5% 추가 매수
+            #         print("------------------------------------------------------")
+            #         print("반대 신호가 강해 손절 후 포지션 스위칭")
+            #         print("Buy", amount, TARGET_COIN_TICKER)
+            #         current_price = binance.get_now_price(TARGET_COIN_TICKER)
+            #         binance.create_order(TARGET_COIN_TICKER, "buy", amount + abs_amt, current_price)
+            #         # binance.create_market_order(TARGET_COIN_TICKER, "buy", amount + abs_amt)
+            #         print("------------------------------------------------------")
+            #         binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
             
             # 포지션 종료, 지정가 매매
             # elif (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0) or (ma_100_variant > 0 and abs(ma_100_variant) >= 1):
@@ -679,37 +741,37 @@ def main():
                 # profit_price = current_price * (1 + STOP_REVENUE_PROFIT_RATE)
             # elif futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE: # 손실 방지
             # 수익은 별로 없지만 반대방향 신호가 강한 경우 or 충분히 수익 있고 반대방향 신호가 적당히 있는 경우
-            elif (futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0) \
-                 or (futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE) \
-                 or (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0):    
-                  # and ma_100_variant < 0 and abs(ma_100_variant) > 8:
-                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                if ma_variant < 0:
-                # 포지션 종료, 5% 추가 매도
-                    print("------------------------------------------------------")
-                    print("반대 신호가 강해 포지션 스위칭")
-                    print("Sell", amount, TARGET_COIN_TICKER)
-                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                    binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
-                    # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
-                    print("------------------------------------------------------")
-                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
+            # elif (futre_change["max_chage"] < minus_switching_rate and revenue_rate > 0) \
+            #      or (futre_change["max_chage"] < MINUS_FUTURE_PRICE_RATE and revenue_rate > STOP_REVENUE_PROFIT_RATE) \
+            #      or (not variant_increase and not rsi_5_vary and not rsi_varint_increase and revenue_rate > 0):    
+            #       # and ma_100_variant < 0 and abs(ma_100_variant) > 8:
+            #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+            #     if ma_variant < 0:
+            #     # 포지션 종료, 5% 추가 매도
+            #         print("------------------------------------------------------")
+            #         print("반대 신호가 강해 포지션 스위칭")
+            #         print("Sell", amount, TARGET_COIN_TICKER)
+            #         current_price = binance.get_now_price(TARGET_COIN_TICKER)
+            #         binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
+            #         # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
+            #         print("------------------------------------------------------")
+            #         binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)
                 
-            elif (futre_change["max_chage"] < minus_switching_rate):
-            # and ma_100_variant < 0:
-                price_variant, ma_variant = get_price_ma_variant(data_list, 25)
-                # 매수 비중 10% 초과
-                if (price_variant < 0 and ma_variant < 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant < 0 and abs(ma_100_variant) > 8:
-                    # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
-                    # and (revenue_rate < DANGER_RATE):
-                    print("------------------------------------------------------")
-                    print("반대 신호가 강해 손절 후 포지션 스위칭")
-                    print("Sell", amount, TARGET_COIN_TICKER)
-                    current_price = binance.get_now_price(TARGET_COIN_TICKER)
-                    binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
-                    # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
-                    print("------------------------------------------------------")
-                    binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)      
+            # elif (futre_change["max_chage"] < minus_switching_rate):
+            # # and ma_100_variant < 0:
+            #     price_variant, ma_variant = get_price_ma_variant(data_list, 25)
+            #     # 매수 비중 10% 초과
+            #     if (price_variant < 0 and ma_variant < 0) and (1 - (position['free'] / (position['total'] + 1)) < LOSS_CRITERIA_RATE): # and ma_100_variant < 0 and abs(ma_100_variant) > 8:
+            #         # and (1 - (position['free'] / (position['total'] + 1)) > LOSS_CRITERIA_RATE) \
+            #         # and (revenue_rate < DANGER_RATE):
+            #         print("------------------------------------------------------")
+            #         print("반대 신호가 강해 손절 후 포지션 스위칭")
+            #         print("Sell", amount, TARGET_COIN_TICKER)
+            #         current_price = binance.get_now_price(TARGET_COIN_TICKER)
+            #         binance.create_order(TARGET_COIN_TICKER, "sell", amount + abs_amt, current_price)
+            #         # binance.create_market_order(TARGET_COIN_TICKER, "sell", amount + abs_amt)
+            #         print("------------------------------------------------------")
+            #         binance.set_stop_loss(TARGET_COIN_TICKER, STOP_LOSS_RATE)      
             
             # 포지션 종료, 지정가 매매
             
@@ -770,3 +832,5 @@ def main():
     
 if __name__ == "__main__":
     main()
+    print("------------------------------------------------------")
+    print("now time : ", datetime.now())
